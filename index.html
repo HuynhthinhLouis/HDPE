@@ -343,17 +343,19 @@
 
 <script>
     // ==========================================
-    // CẤU HÌNH SUPABASE
+    // CẤU HÌNH SUPABASE (ĐÃ ĐỔI TÊN BIẾN TRÁNH XUNG ĐỘT)
     // ==========================================
     const SUPABASE_URL = 'https://qxrovptliyozkiktcvst.supabase.co'; 
     const SUPABASE_ANON_KEY = 'sb_publishable_0YYA8-eml_uTO6McECoBiQ_xW_mE8My'; 
 
     const MAX_TEAMS = 4;
-    let supabase = null;
+    
+    // Sử dụng tên biến 'supabaseClient' để tránh trùng với 'window.supabase' từ CDN
+    let supabaseClient = null;
 
     if (SUPABASE_URL.startsWith('http')) {
         try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         } catch (err) {
             console.error("Lỗi khởi tạo Supabase:", err);
         }
@@ -365,14 +367,14 @@
         const submitBtn = document.getElementById('submitBtn');
         const allInputs = document.querySelectorAll('#regForm input, #regForm select');
 
-        if (!supabase) {
+        if (!supabaseClient) {
             banner.className = 'status-banner warning';
             banner.innerHTML = '⚠️ CHƯA KẾT NỐI DATABASE: Vui lòng kiểm tra cấu hình Supabase!';
             return true;
         }
 
         try {
-            const { count, error } = await supabase
+            const { count, error } = await supabaseClient
                 .from('registrations')
                 .select('*', { count: 'exact', head: true });
 
@@ -401,11 +403,11 @@
 
     window.addEventListener('DOMContentLoaded', checkRegistrationStatus);
 
-    // XỬ LÝ KHI GỬI FORM (ĐÃ SỬA LỖI XỬ LÝ ĐỒNG BỘ CATCH)
+    // XỬ LÝ KHI GỬI FORM
     document.getElementById('regForm').addEventListener('submit', async function(e) {
         e.preventDefault(); 
         
-        if (!supabase) {
+        if (!supabaseClient) {
             alert('❌ Bạn chưa cấu hình đường link Supabase trong trang web. Vui lòng kiểm tra lại!');
             return;
         }
@@ -442,7 +444,7 @@
             };
 
             // Thực hiện thao tác Insert vào Database
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('registrations')
                 .insert([registrationData]);
 
