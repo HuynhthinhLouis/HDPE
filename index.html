@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng Ký - HDPE Premier League</title>
+    <title>HDPE Premier League - Valorant Tournament</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -225,12 +225,96 @@
             font-size: 14px;
         }
 
+        /* STYLE RIÊNG CHO BẢNG THI ĐẤU (BRACKET VIEW) CỦA QTV */
+        .match-card {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #334455;
+            margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .match-header {
+            background: #151c24;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #334455;
+        }
+
+        .match-round {
+            font-weight: bold;
+            color: var(--val-red);
+            text-transform: uppercase;
+            font-size: 16px;
+            letter-spacing: 1px;
+        }
+
+        .match-time {
+            font-size: 13px;
+            color: var(--val-yellow);
+            background: rgba(255, 215, 0, 0.1);
+            padding: 4px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--val-yellow);
+        }
+
+        .match-body {
+            padding: 30px 20px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .team-box {
+            text-align: center;
+            flex: 1;
+            font-size: 20px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .team-box.winner {
+            color: #28a745;
+            text-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+            transform: scale(1.05);
+        }
+
+        .team-box.loser {
+            color: var(--val-gray);
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        .vs-box {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--val-red);
+            padding: 0 20px;
+            text-align: center;
+        }
+
+        .score-display {
+            font-size: 22px;
+            color: var(--val-yellow);
+            font-weight: bold;
+            margin-top: 5px;
+            background: #0f1923;
+            padding: 2px 10px;
+            border-radius: 4px;
+            border: 1px solid #334455;
+        }
+
         @media (max-width: 650px) {
             .player-row { grid-template-columns: 1fr; gap: 10px; }
             .container { padding: 20px; }
             h1 { font-size: 24px; }
             .file-upload-wrapper { flex-direction: column; align-items: flex-start; }
             .logo-preview { align-self: center; width: 100px; height: 100px; }
+            .match-header { flex-direction: column; gap: 5px; text-align: center; }
+            .match-body { flex-direction: column; gap: 15px; }
         }
     </style>
 </head>
@@ -238,215 +322,224 @@
 
 <div class="container">
     <h1>HDPE PREMIER LEAGUE</h1>
-    <div class="subtitle">VALORANT TOURNAMENT REGISTRATION</div>
+    <div class="subtitle">VALORANT TOURNAMENT</div>
 
-    <div id="statusBanner" class="status-banner">
-        Đang kiểm tra số lượng đội đăng ký từ hệ thống...
+    <div id="bracketSection" style="display: none;">
+        <div class="status-banner" style="border-color: #28a745; background: rgba(40, 167, 69, 0.1); color: #28a745;">
+            🏆 DANH SÁCH CHIẾN ĐỘI & LỊCH THI ĐẤU CHÍNH THỨC 🏆
+        </div>
+        <div id="matchesDisplayContainer"></div>
     </div>
 
-    <div class="rules-box">
-        <h3>Thể lệ & Quy định giải đấu</h3>
-        <ul>
-            <li><strong>Quy mô giải đấu:</strong> Giới hạn duy nhất đúng <strong>04 Đội tuyển</strong> đăng ký sớm nhất. Cổng đăng ký sẽ tự động khóa và ngừng nhận dữ liệu ngay khi đủ số lượng.</li>
-            <li style="color: var(--val-yellow);"><strong>Điều kiện Rank (Cực kỳ quan trọng):</strong> Giải đấu chỉ dành cho người chơi có mức Rank từ <strong>Bạch Kim (Platinum) trở xuống</strong> (Áp dụng cho cả tuyển thủ dự bị). Đội nào có thành viên vượt quá mức Rank quy định sẽ bị loại ngay từ vòng đăng ký!</li>
-            <li><strong>Thể thức thi đấu:</strong> Vòng Bán kết thi đấu BO1 (Chia cặp ngẫu nhiên). Hai đội tuyển chiến thắng sẽ bước vào Vòng Chung kết tranh ngôi vô địch bằng loạt trận BO3.</li>
-            <li><strong>Tài khoản thi đấu:</strong> Tuyển thủ bắt buộc sử dụng đúng Riot ID đã đăng ký. Nghiêm cấm gian lận (hack/cheat) hoặc sử dụng tài khoản của người khác (smurf).</li>
-            <li><strong>Thời gian & Điểm danh:</strong> Toàn đội phải có mặt tập trung tại phòng chờ Discord trước giờ thi đấu 15 phút. Quá giờ thi đấu 10 phút không lý do sẽ bị xử thua cuộc lập tức.</li>
-        </ul>
-    </div>
+    <div id="registrationSection">
+        <div id="statusBanner" class="status-banner">
+            Đang kiểm tra dữ liệu từ hệ thống...
+        </div>
 
-    <form id="regForm">
-        <div class="section-title">1. Thông Tin Đội Thi Đấu</div>
-        <div class="form-group">
-            <label>Tên Đội (Team Name) *</label>
-            <input type="text" id="teamName" placeholder="VD: Sentinels" required>
+        <div class="rules-box">
+            <h3>Thể lệ & Quy định giải đấu</h3>
+            <ul>
+                <li><strong>Quy mô giải đấu:</strong> Giới hạn duy nhất đúng <strong>04 Đội tuyển</strong> đăng ký sớm nhất. Cổng đăng ký sẽ tự động khóa và ngừng nhận dữ liệu ngay khi đủ số lượng.</li>
+                <li style="color: var(--val-yellow);"><strong>Điều kiện Rank (Cực kỳ quan trọng):</strong> Giải đấu chỉ dành cho người chơi có mức Rank từ <strong>Bạch Kim (Platinum) trở xuống</strong> (Áp dụng cho cả tuyển thủ dự bị). Đội nào có thành viên vượt quá mức Rank quy định sẽ bị loại ngay từ vòng đăng ký!</li>
+                <li><strong>Thể thức thi đấu:</strong> Vòng Bán kết thi đấu BO1 (Chia cặp ngẫu nhiên). Hai đội tuyển chiến thắng sẽ bước vào Vòng Chung kết tranh ngôi vô địch bằng loạt trận BO3.</li>
+                <li><strong>Tài khoản thi đấu:</strong> Tuyển thủ bắt buộc sử dụng đúng Riot ID đã đăng ký. Nghiêm cấm gian lận (hack/cheat) hoặc sử dụng tài khoản của người khác (smurf).</li>
+                <li><strong>Thời gian & Điểm danh:</strong> Toàn đội phải có mặt tập trung tại phòng chờ Discord trước giờ thi đấu 15 phút. Quá giờ thi đấu 10 phút không lý do sẽ bị xử thua cuộc lập tức.</li>
+            </ul>
         </div>
-        <div class="form-group">
-            <label>Tag Đội (Viết tắt tối đa 5 ký tự) *</label>
-            <input type="text" id="teamTag" placeholder="VD: SEN" maxlength="5" required>
-        </div>
-        
-        <div class="form-group">
-            <label>Logo Đội Tuyển (Định dạng PNG, JPG, WEBP - Tối đa 2MB) *</label>
-            <div class="file-upload-wrapper">
-                <input type="file" id="teamLogo" accept="image/png, image/jpeg, image/webp" required>
-                <div class="logo-preview">
-                    <img id="previewImg" src="" alt="Logo">
-                    <span id="previewText">Chưa có Logo</span>
+
+        <form id="regForm">
+            <div class="section-title">1. Thông Tin Đội Thi Đấu</div>
+            <div class="form-group">
+                <label>Tên Đội (Team Name) *</label>
+                <input type="text" id="teamName" placeholder="VD: Sentinels" required>
+            </div>
+            <div class="form-group">
+                <label>Tag Đội (Viết tắt tối đa 5 ký tự) *</label>
+                <input type="text" id="teamTag" placeholder="VD: SEN" maxlength="5" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Logo Đội Tuyển (Định dạng PNG, JPG, WEBP - Tối đa 2MB) *</label>
+                <div class="file-upload-wrapper">
+                    <input type="file" id="teamLogo" accept="image/png, image/jpeg, image/webp" required>
+                    <div class="logo-preview">
+                        <img id="previewImg" src="" alt="Logo">
+                        <span id="previewText">Chưa có Logo</span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="section-title">2. Thông Tin Đội Trưởng</div>
-        <div class="form-group">
-            <label>Họ và Tên Thật *</label>
-            <input type="text" id="leaderName" placeholder="Nhập tên người đại diện liên hệ" required>
-        </div>
-        <div class="form-group">
-            <label>Discord ID *</label>
-            <input type="text" id="leaderDiscord" placeholder="VD: Tenz#1234 hoặc tenz_username" required>
-        </div>
-        <div class="form-group">
-            <label>Số Điện Thoại / Zalo *</label>
-            <input type="tel" id="leaderPhone" placeholder="Dùng để BTC gọi trực tiếp khi có sự cố" required>
-        </div>
+            <div class="section-title">2. Thông Tin Đội Trưởng</div>
+            <div class="form-group">
+                <label>Họ và Tên Thật *</label>
+                <input type="text" id="leaderName" placeholder="Nhập tên người đại diện liên hệ" required>
+            </div>
+            <div class="form-group">
+                <label>Discord ID *</label>
+                <input type="text" id="leaderDiscord" placeholder="VD: Tenz#1234 hoặc tenz_username" required>
+            </div>
+            <div class="form-group">
+                <label>Số Điện Thoại / Zalo *</label>
+                <input type="tel" id="leaderPhone" placeholder="Dùng để BTC gọi trực tiếp khi có sự cố" required>
+            </div>
 
-        <div class="section-title">3. Đội hình thi đấu (5 Chính thức - 1 Dự bị)</div>
-        <div class="rank-rule-highlight">
-            ⚠️ <strong>CHÚ Ý:</strong> Chỉ chấp nhận tuyển thủ mức Rank cao nhất là <strong>Bạch Kim (Platinum)</strong>. Bất kỳ thành viên nào (kể cả Dự bị) có Rank từ Kim Cương trở lên đều KHÔNG ĐỦ ĐIỀU KIỆN tham gia.
-        </div>
-        <p class="note" style="margin-bottom: 15px; color: var(--val-red);">* Lưu ý quan trọng: Ghi chính xác Riot ID gồm cả Tên#Tag (Ví dụ: TenZ#NA1)</p>
-        
-        <label>Tuyển thủ 1 (Đội Trưởng) *</label>
-        <div class="player-row">
-            <input type="text" id="p1_id" placeholder="Riot ID (Tên#Tag)" required>
-            <select id="p1_rank" required>
-                <option value="">Chọn Rank...</option>
-                <option value="Sắt (Iron)">Sắt (Iron)</option>
-                <option value="Bạc (Silver)">Bạc (Silver)</option>
-                <option value="Vàng (Gold)">Vàng (Gold)</option>
-                <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
-                <option value="Kim Cương (Diamond)" style="color: var(--val-red); font-weight: bold;">Kim Cương (Không hợp lệ)</option>
-                <option value="Cao Thủ (Ascendant)" style="color: var(--val-red); font-weight: bold;">Cao Thủ (Không hợp lệ)</option>
-                <option value="Bất Tử - Radiant" style="color: var(--val-red); font-weight: bold;">Bất Tử - Radiant (Không hợp lệ)</option>
-            </select>
-            <select id="p1_role" required>
-                <option value="">Chọn Vai trò...</option>
-                <option value="Duelist">Duelist</option>
-                <option value="Initiator">Initiator</option>
-                <option value="Controller">Controller</option>
-                <option value="Sentinel">Sentinel</option>
-                <option value="Flex">Flex</option>
-            </select>
-        </div>
+            <div class="section-title">3. Đội hình thi đấu (5 Chính thức - 1 Dự bị)</div>
+            <div class="rank-rule-highlight">
+                ⚠️ <strong>CHÚ Ý:</strong> Chỉ chấp nhận tuyển thủ mức Rank cao nhất là <strong>Bạch Kim (Platinum)</strong>. Bất kỳ thành viên nào (kể cả Dự bị) có Rank từ Kim Cương trở lên đều KHÔNG ĐỦ ĐIỀU KIỆN tham gia.
+            </div>
+            <p class="note" style="margin-bottom: 15px; color: var(--val-red);">* Lưu ý quan trọng: Ghi chính xác Riot ID gồm cả Tên#Tag (Ví dụ: TenZ#NA1)</p>
+            
+            <label>Tuyển thủ 1 (Đội Trưởng) *</label>
+            <div class="player-row">
+                <input type="text" id="p1_id" placeholder="Riot ID (Tên#Tag)" required>
+                <select id="p1_rank" required>
+                    <option value="">Chọn Rank...</option>
+                    <option value="Sắt (Iron)">Sắt (Iron)</option>
+                    <option value="Bạc (Silver)">Bạc (Silver)</option>
+                    <option value="Vàng (Gold)">Vàng (Gold)</option>
+                    <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
+                    <option value="Kim Cương (Diamond)" style="color: var(--val-red); font-weight: bold;">Kim Cương (Không hợp lệ)</option>
+                    <option value="Cao Thủ (Ascendant)" style="color: var(--val-red); font-weight: bold;">Cao Thủ (Không hợp lệ)</option>
+                    <option value="Bất Tử - Radiant" style="color: var(--val-red); font-weight: bold;">Bất Tử - Radiant (Không hợp lệ)</option>
+                </select>
+                <select id="p1_role" required>
+                    <option value="">Chọn Vai trò...</option>
+                    <option value="Duelist">Duelist</option>
+                    <option value="Initiator">Initiator</option>
+                    <option value="Controller">Controller</option>
+                    <option value="Sentinel">Sentinel</option>
+                    <option value="Flex">Flex</option>
+                </select>
+            </div>
 
-        <label>Tuyển thủ 2 *</label>
-        <div class="player-row">
-            <input type="text" id="p2_id" placeholder="Riot ID (Tên#Tag)" required>
-            <select id="p2_rank" required>
-                <option value="">Chọn Rank...</option>
-                <option value="Sắt (Iron)">Sắt (Iron)</option>
-                <option value="Bạc (Silver)">Bạc (Silver)</option>
-                <option value="Vàng (Gold)">Vàng (Gold)</option>
-                <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
-                <option value="Kim Cương (Diamond)" style="color: var(--val-red); font-weight: bold;">Kim Cương (Không hợp lệ)</option>
-                <option value="Cao Thủ (Ascendant)" style="color: var(--val-red); font-weight: bold;">Cao Thủ (Không hợp lệ)</option>
-                <option value="Bất Tử - Radiant" style="color: var(--val-red); font-weight: bold;">Bất Tử - Radiant (Không hợp lệ)</option>
-            </select>
-            <select id="p2_role" required>
-                <option value="">Chọn Vai trò...</option>
-                <option value="Duelist">Duelist</option>
-                <option value="Initiator">Initiator</option>
-                <option value="Controller">Controller</option>
-                <option value="Sentinel">Sentinel</option>
-                <option value="Flex">Flex</option>
-            </select>
-        </div>
+            <label>Tuyển thủ 2 *</label>
+            <div class="player-row">
+                <input type="text" id="p2_id" placeholder="Riot ID (Tên#Tag)" required>
+                <select id="p2_rank" required>
+                    <option value="">Chọn Rank...</option>
+                    <option value="Sắt (Iron)">Sắt (Iron)</option>
+                    <option value="Bạc (Silver)">Bạc (Silver)</option>
+                    <option value="Vàng (Gold)">Vàng (Gold)</option>
+                    <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
+                    <option value="Kim Cương (Diamond)" style="color: var(--val-red); font-weight: bold;">Kim Cương (Không hợp lệ)</option>
+                    <option value="Cao Thủ (Ascendant)" style="color: var(--val-red); font-weight: bold;">Cao Thủ (Không hợp lệ)</option>
+                    <option value="Bất Tử - Radiant" style="color: var(--val-red); font-weight: bold;">Bất Tử - Radiant (Không hợp lệ)</option>
+                </select>
+                <select id="p2_role" required>
+                    <option value="">Chọn Vai trò...</option>
+                    <option value="Duelist">Duelist</option>
+                    <option value="Initiator">Initiator</option>
+                    <option value="Controller">Controller</option>
+                    <option value="Sentinel">Sentinel</option>
+                    <option value="Flex">Flex</option>
+                </select>
+            </div>
 
-        <label>Tuyển thủ 3 *</label>
-        <div class="player-row">
-            <input type="text" id="p3_id" placeholder="Riot ID (Tên#Tag)" required>
-            <select id="p3_rank" required>
-                <option value="">Chọn Rank...</option>
-                <option value="Sắt (Iron)">Sắt (Iron)</option>
-                <option value="Bạc (Silver)">Bạc (Silver)</option>
-                <option value="Vàng (Gold)">Vàng (Gold)</option>
-                <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
-                <option value="Kim Cương (Diamond)" style="color: var(--val-red); font-weight: bold;">Kim Cương (Không hợp lệ)</option>
-                <option value="Cao Thủ (Ascendant)" style="color: var(--val-red); font-weight: bold;">Cao Thủ (Không hợp lệ)</option>
-                <option value="Bất Tử - Radiant" style="color: var(--val-red); font-weight: bold;">Bất Tử - Radiant (Không hợp lệ)</option>
-            </select>
-            <select id="p3_role" required>
-                <option value="">Chọn Vai trò...</option>
-                <option value="Duelist">Duelist</option>
-                <option value="Initiator">Initiator</option>
-                <option value="Controller">Controller</option>
-                <option value="Sentinel">Sentinel</option>
-                <option value="Flex">Flex</option>
-            </select>
-        </div>
+            <label>Tuyển thủ 3 *</label>
+            <div class="player-row">
+                <input type="text" id="p3_id" placeholder="Riot ID (Tên#Tag)" required>
+                <select id="p3_rank" required>
+                    <option value="">Chọn Rank...</option>
+                    <option value="Sắt (Iron)">Sắt (Iron)</option>
+                    <option value="Bạc (Silver)">Bạc (Silver)</option>
+                    <option value="Vàng (Gold)">Vàng (Gold)</option>
+                    <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
+                    <option value="Kim Cương (Diamond)" style="color: var(--val-red); font-weight: bold;">Kim Cương (Không hợp lệ)</option>
+                    <option value="Cao Thủ (Ascendant)" style="color: var(--val-red); font-weight: bold;">Cao Thủ (Không hợp lệ)</option>
+                    <option value="Bất Tử - Radiant" style="color: var(--val-red); font-weight: bold;">Bất Tử - Radiant (Không hợp lệ)</option>
+                </select>
+                <select id="p3_role" required>
+                    <option value="">Chọn Vai trò...</option>
+                    <option value="Duelist">Duelist</option>
+                    <option value="Initiator">Initiator</option>
+                    <option value="Controller">Controller</option>
+                    <option value="Sentinel">Sentinel</option>
+                    <option value="Flex">Flex</option>
+                </select>
+            </div>
 
-        <label>Tuyển thủ 4 *</label>
-        <div class="player-row">
-            <input type="text" id="p4_id" placeholder="Riot ID (Tên#Tag)" required>
-            <select id="p4_rank" required>
-                <option value="">Chọn Rank...</option>
-                <option value="Sắt (Iron)">Sắt (Iron)</option>
-                <option value="Bạc (Silver)">Bạc (Silver)</option>
-                <option value="Vàng (Gold)">Vàng (Gold)</option>
-                <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
-                <option value="Kim Cương (Diamond)" style="color: var(--val-red); font-weight: bold;">Kim Cương (Không hợp lệ)</option>
-                <option value="Cao Thủ (Ascendant)" style="color: var(--val-red); font-weight: bold;">Cao Thủ (Không hợp lệ)</option>
-                <option value="Bất Tử - Radiant" style="color: var(--val-red); font-weight: bold;">Bất Tử - Radiant (Không hợp lệ)</option>
-            </select>
-            <select id="p4_role" required>
-                <option value="">Chọn Vai trò...</option>
-                <option value="Duelist">Duelist</option>
-                <option value="Initiator">Initiator</option>
-                <option value="Controller">Controller</option>
-                <option value="Sentinel">Sentinel</option>
-                <option value="Flex">Flex</option>
-            </select>
-        </div>
+            <label>Tuyển thủ 4 *</label>
+            <div class="player-row">
+                <input type="text" id="p4_id" placeholder="Riot ID (Tên#Tag)" required>
+                <select id="p4_rank" required>
+                    <option value="">Chọn Rank...</option>
+                    <option value="Sắt (Iron)">Sắt (Iron)</option>
+                    <option value="Bạc (Silver)">Bạc (Silver)</option>
+                    <option value="Vàng (Gold)">Vàng (Gold)</option>
+                    <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
+                    <option value="Kim Cương (Diamond)" style="color: var(--val-red); font-weight: bold;">Kim Cương (Không hợp lệ)</option>
+                    <option value="Cao Thủ (Ascendant)" style="color: var(--val-red); font-weight: bold;">Cao Thủ (Không hợp lệ)</option>
+                    <option value="Bất Tử - Radiant" style="color: var(--val-red); font-weight: bold;">Bất Tử - Radiant (Không hợp lệ)</option>
+                </select>
+                <select id="p4_role" required>
+                    <option value="">Chọn Vai trò...</option>
+                    <option value="Duelist">Duelist</option>
+                    <option value="Initiator">Initiator</option>
+                    <option value="Controller">Controller</option>
+                    <option value="Sentinel">Sentinel</option>
+                    <option value="Flex">Flex</option>
+                </select>
+            </div>
 
-        <label>Tuyển thủ 5 *</label>
-        <div class="player-row">
-            <input type="text" id="p5_id" placeholder="Riot ID (Tên#Tag)" required>
-            <select id="p5_rank" required>
-                <option value="">Chọn Rank...</option>
-                <option value="Sắt (Iron)">Sắt (Iron)</option>
-                <option value="Bạc (Silver)">Bạc (Silver)</option>
-                <option value="Vàng (Gold)">Vàng (Gold)</option>
-                <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
-                <option value="Kim Cương (Diamond)" style="color: var(--val-red); font-weight: bold;">Kim Cương (Không hợp lệ)</option>
-                <option value="Cao Thủ (Ascendant)" style="color: var(--val-red); font-weight: bold;">Cao Thủ (Không hợp lệ)</option>
-                <option value="Bất Tử - Radiant" style="color: var(--val-red); font-weight: bold;">Bất Tử - Radiant (Không hợp lệ)</option>
-            </select>
-            <select id="p5_role" required>
-                <option value="">Chọn Vai trò...</option>
-                <option value="Duelist">Duelist</option>
-                <option value="Initiator">Initiator</option>
-                <option value="Controller">Controller</option>
-                <option value="Sentinel">Sentinel</option>
-                <option value="Flex">Flex</option>
-            </select>
-        </div>
+            <label>Tuyển thủ 5 *</label>
+            <div class="player-row">
+                <input type="text" id="p5_id" placeholder="Riot ID (Tên#Tag)" required>
+                <select id="p5_rank" required>
+                    <option value="">Chọn Rank...</option>
+                    <option value="Sắt (Iron)">Sắt (Iron)</option>
+                    <option value="Bạc (Silver)">Bạc (Silver)</option>
+                    <option value="Vàng (Gold)">Vàng (Gold)</option>
+                    <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
+                    <option value="Kim Cương (Diamond)" style="color: var(--val-red); font-weight: bold;">Kim Cương (Không hợp lệ)</option>
+                    <option value="Cao Thủ (Ascendant)" style="color: var(--val-red); font-weight: bold;">Cao Thủ (Không hợp lệ)</option>
+                    <option value="Bất Tử - Radiant" style="color: var(--val-red); font-weight: bold;">Bất Tử - Radiant (Không hợp lệ)</option>
+                </select>
+                <select id="p5_role" required>
+                    <option value="">Chọn Vai trò...</option>
+                    <option value="Duelist">Duelist</option>
+                    <option value="Initiator">Initiator</option>
+                    <option value="Controller">Controller</option>
+                    <option value="Sentinel">Sentinel</option>
+                    <option value="Flex">Flex</option>
+                </select>
+            </div>
 
-        <label style="color: var(--val-yellow); margin-top: 15px;">Tuyển thủ 6 (Dự Bị - Không bắt buộc)</label>
-        <div class="player-row sub">
-            <input type="text" id="p6_id" placeholder="Riot ID (Tên#Tag)">
-            <select id="p6_rank">
-                <option value="">Chọn Rank...</option>
-                <option value="Sắt (Iron)">Sắt (Iron)</option>
-                <option value="Bạc (Silver)">Bạc (Silver)</option>
-                <option value="Vàng (Gold)">Vàng (Gold)</option>
-                <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
-                <option value="Kim Cương (Diamond)" style="color: var(--val-red); font-weight: bold;">Kim Cương (Không hợp lệ)</option>
-                <option value="Cao Thủ (Ascendant)" style="color: var(--val-red); font-weight: bold;">Cao Thủ (Không hợp lệ)</option>
-                <option value="Bất Tử - Radiant" style="color: var(--val-red); font-weight: bold;">Bất Tử - Radiant (Không hợp lệ)</option>
-            </select>
-            <select id="p6_role">
-                <option value="">Chọn Vai trò...</option>
-                <option value="Duelist">Duelist</option>
-                <option value="Initiator">Initiator</option>
-                <option value="Controller">Controller</option>
-                <option value="Sentinel">Sentinel</option>
-                <option value="Flex">Flex</option>
-            </select>
-        </div>
+            <label style="color: var(--val-yellow); margin-top: 15px;">Tuyển thủ 6 (Dự Bị - Không bắt buộc)</label>
+            <div class="player-row sub">
+                <input type="text" id="p6_id" placeholder="Riot ID (Tên#Tag)">
+                <select id="p6_rank">
+                    <option value="">Chọn Rank...</option>
+                    <option value="Sắt (Iron)">Sắt (Iron)</option>
+                    <option value="Bạc (Silver)">Bạc (Silver)</option>
+                    <option value="Vàng (Gold)">Vàng (Gold)</option>
+                    <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
+                    <option value="Kim Cương (Diamond)" style="color: var(--val-red); font-weight: bold;">Kim Cương (Không hợp lệ)</option>
+                    <option value="Cao Thủ (Ascendant)" style="color: var(--val-red); font-weight: bold;">Cao Thủ (Không hợp lệ)</option>
+                    <option value="Bất Tử - Radiant" style="color: var(--val-red); font-weight: bold;">Bất Tử - Radiant (Không hợp lệ)</option>
+                </select>
+                <select id="p6_role">
+                    <option value="">Chọn Vai trò...</option>
+                    <option value="Duelist">Duelist</option>
+                    <option value="Initiator">Initiator</option>
+                    <option value="Controller">Controller</option>
+                    <option value="Sentinel">Sentinel</option>
+                    <option value="Flex">Flex</option>
+                </select>
+            </div>
 
-        <div class="checkbox-group">
-            <input type="checkbox" id="agreeTerms" required>
-            <label for="agreeTerms">Tôi xác nhận mình là Đội trưởng, toàn đội có mức Rank đúng quy định (Từ Bạch Kim trở xuống) và sẽ tuân thủ nghiêm ngặt Thể lệ của HDPE Premier League.</label>
-        </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="agreeTerms" required>
+                <label for="agreeTerms">Tôi xác nhận mình là Đội trưởng, toàn đội có mức Rank đúng quy định (Từ Bạch Kim trở xuống) và sẽ tuân thủ nghiêm ngặt Thể lệ của HDPE Premier League.</label>
+            </div>
 
-        <button type="submit" id="submitBtn" class="btn-submit">Gửi Đăng Ký Ngay</button>
-    </form>
+            <button type="submit" id="submitBtn" class="btn-submit">Gửi Đăng Ký Ngay</button>
+        </form>
+    </div>
 </div>
 
 <script>
     // ==========================================
-    // CẤU HÌNH SUPABASE
+    // CẤU HÌNH SUPABASE (Đã dùng tên biến supabaseClient)
     // ==========================================
     const SUPABASE_URL = 'https://qxrovptliyozkiktcvst.supabase.co'; 
     const SUPABASE_ANON_KEY = 'sb_publishable_0YYA8-eml_uTO6McECoBiQ_xW_mE8My'; 
@@ -462,7 +555,87 @@
         }
     }
 
-    // XỬ LÝ PREVIEW LOGO KHI CHỌN FILE
+    // 1. KIỂM TRA TRẠNG THÁI HỆ THỐNG KHI TRANG WEB TẢI XONG
+    async function initPage() {
+        if (!supabaseClient) {
+            document.getElementById('statusBanner').innerHTML = '⚠️ Lỗi kết nối Database! Vui lòng kiểm tra lại.';
+            return;
+        }
+
+        try {
+            // Kiểm tra xem QTV đã công bố lịch đấu chưa
+            const { data: setting } = await supabaseClient
+                .from('settings')
+                .select('*')
+                .eq('id', 'global')
+                .single();
+            
+            if (setting && setting.is_bracket_published) {
+                // CHẾ ĐỘ 1: BẢNG THI ĐẤU (QTV ĐÃ CÔNG BỐ)
+                document.getElementById('registrationSection').style.display = 'none';
+                document.getElementById('bracketSection').style.display = 'block';
+                await loadTournamentBracket();
+            } else {
+                // CHẾ ĐỘ 2: FORM ĐĂNG KÝ (MẶC ĐỊNH)
+                document.getElementById('registrationSection').style.display = 'block';
+                document.getElementById('bracketSection').style.display = 'none';
+                await checkRegistrationStatus();
+            }
+        } catch (error) {
+            // Nếu lỗi đọc bảng settings (chưa tạo bảng) -> Vẫn hiển thị Form đăng ký bình thường
+            console.warn('Chưa có cấu hình Admin, mặc định hiện Form đăng ký.', error);
+            await checkRegistrationStatus();
+        }
+    }
+
+    // 2. HÀM TẢI VÀ VẼ BẢNG THI ĐẤU (HIỂN THỊ KHI QTV CÔNG BỐ)
+    async function loadTournamentBracket() {
+        const { data: matches, error } = await supabaseClient
+            .from('matches')
+            .select('*')
+            .order('id');
+
+        const container = document.getElementById('matchesDisplayContainer');
+        container.innerHTML = '';
+
+        if (error || !matches || matches.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:var(--val-yellow);">⚠️ Lịch thi đấu đang được BTC cập nhật. Vui lòng quay lại sau!</p>';
+            return;
+        }
+
+        matches.forEach(m => {
+            const t1 = m.team1_name || 'Đang chờ đối thủ...';
+            const t2 = m.team2_name || 'Đang chờ đối thủ...';
+            const time = m.match_time ? `⏰ ${m.match_time}` : '⏰ Thời gian: Chưa có thông báo chính thức';
+            
+            let t1Class = 'team-box';
+            let t2Class = 'team-box';
+            
+            if (m.winner) {
+                if (m.winner === t1) { t1Class += ' winner'; t2Class += ' loser'; }
+                else if (m.winner === t2) { t2Class += ' winner'; t1Class += ' loser'; }
+            }
+
+            container.innerHTML += `
+                <div class="match-card">
+                    <div class="match-header">
+                        <span class="match-round">${m.round_name}</span>
+                        <span class="match-time">${time}</span>
+                    </div>
+                    <div class="match-body">
+                        <div class="${t1Class}">${t1} ${m.winner === t1 ? '👑' : ''}</div>
+                        <div class="vs-box">
+                            VS
+                            <div class="score-display">${m.score || '-'}</div>
+                        </div>
+                        <div class="${t2Class}">${t2} ${m.winner === t2 ? '👑' : ''}</div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    // 3. XỬ LÝ PREVIEW LOGO KHI CHỌN FILE
     document.getElementById('teamLogo').addEventListener('change', function(e) {
         const file = e.target.files[0];
         const previewImg = document.getElementById('previewImg');
@@ -485,7 +658,7 @@
         }
     });
 
-    // HÀM KIỂM TRA SỐ LƯỢNG ĐỘI
+    // 4. HÀM KIỂM TRA SỐ LƯỢNG ĐỘI
     async function checkRegistrationStatus() {
         const banner = document.getElementById('statusBanner');
         const submitBtn = document.getElementById('submitBtn');
@@ -525,13 +698,10 @@
         }
     }
 
-    window.addEventListener('DOMContentLoaded', checkRegistrationStatus);
-
-    // HÀM KIỂM TRA RANK HỢP LỆ (TỪ PLAT TRỞ XUỐNG)
+    // 5. HÀM KIỂM TRA RANK HỢP LỆ (TỪ PLAT TRỞ XUỐNG)
     function validatePlayerRanks() {
         const invalidRanks = ['Kim Cương (Diamond)', 'Cao Thủ (Ascendant)', 'Bất Tử - Radiant'];
         
-        // Kiểm tra từ p1 đến p6
         for (let i = 1; i <= 6; i++) {
             const rankSelect = document.getElementById(`p${i}_rank`);
             const playerIdInput = document.getElementById(`p${i}_id`);
@@ -548,13 +718,13 @@
         return true;
     }
 
-    // XỬ LÝ KHI GỬI FORM
+    // 6. XỬ LÝ KHI GỬI FORM ĐĂNG KÝ
     document.getElementById('regForm').addEventListener('submit', async function(e) {
         e.preventDefault(); 
         
-        // 1. KIỂM TRA RANK TRƯỚC KHI LÀM BẤT KỲ VIỆC GÌ
+        // Kiểm tra điều kiện Rank trước tiên
         if (!validatePlayerRanks()) {
-            return; // Dừng lại ngay lập tức nếu có thành viên trên Bạch Kim
+            return;
         }
 
         if (!supabaseClient) {
@@ -573,7 +743,7 @@
                 return;
             }
 
-            // 2. Upload Logo lên Supabase Storage
+            // Upload Logo lên Supabase Storage
             submitBtn.innerText = 'Đang tải Logo lên hệ thống...';
             const fileInput = document.getElementById('teamLogo');
             const file = fileInput.files[0];
@@ -592,7 +762,7 @@
 
                 if (uploadError) {
                     if (uploadError.message.includes('not found') || uploadError.message.includes('policy')) {
-                        throw new Error('Chưa tạo Bucket lưu trữ hoặc lỗi quyền RLS Storage! Hãy chạy mã SQL ở Bước 1.');
+                        throw new Error('Chưa tạo Bucket lưu trữ hoặc lỗi quyền RLS Storage! Hãy chạy lệnh SQL cấu hình Storage.');
                     }
                     throw uploadError;
                 }
@@ -605,7 +775,7 @@
                 logoPublicUrl = urlData.publicUrl;
             }
 
-            // 3. Ghi dữ liệu vào Database
+            // Ghi dữ liệu vào Database
             submitBtn.innerText = 'Đang ghi nhận danh sách tuyển thủ...';
 
             const registrationData = {
@@ -656,6 +826,9 @@
             submitBtn.innerText = 'Gửi Đăng Ký Ngay';
         }
     });
+
+    // Bắt đầu khởi tạo giao diện khi web vừa tải
+    window.addEventListener('DOMContentLoaded', initPage);
 </script>
 
 </body>
