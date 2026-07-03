@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>QTV - HDPE Premier League</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --val-red: #ff4655; --val-dark: #0f1923; --val-card: #1f2d3d; --val-text: #ece8e1; --val-gray: #768079; --val-yellow: #ffd700; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--val-dark); color: var(--val-text); padding: 20px; }
+        .container { max-width: 1000px; margin: 20px auto; background: var(--val-card); padding: 30px; border-top: 5px solid var(--val-red); }
+        h1, h2 { color: var(--val-text); text-transform: uppercase; margin-bottom: 20px; }
+        .section { margin-bottom: 40px; background: rgba(0,0,0,0.3); padding: 20px; border: 1px solid var(--val-gray); }
+        input, select, button { padding: 10px; margin: 5px 0; background: var(--val-dark); border: 1px solid #334455; color: white; width: 100%; }
+        button { background: var(--val-red); font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        button:hover { background: #e03e4d; }
+        button.btn-green { background: #28a745; }
+        button.btn-yellow { background: var(--val-yellow); color: black; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #334455; padding: 10px; text-align: left; font-size: 14px; }
+        th { background: #151c24; color: var(--val-red); }
+        .match-box { background: rgba(255,255,255,0.05); padding: 15px; margin-bottom: 15px; border-left: 4px solid var(--val-red); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Hệ Thống Quản Trị Giải Đấu (Admin Panel)</h1>
+
+    <div id="loginSection" class="section">
+        <h2>Đăng Nhập QTV</h2>
+        <input type="text" id="adminUser" placeholder="Tài khoản (mặc định: admin)">
+        <input type="password" id="adminPass" placeholder="Mật khẩu (mặc định: admin123)">
+        <button onclick="loginAdmin()">Đăng Nhập</button>
+    </div>
+
+    <div id="adminDashboard" style="display: none;">
+        
+        <div class="section" style="text-align: center; border-color: var(--val-yellow);">
+            <h3 style="color: var(--val-yellow); margin-bottom: 10px;">TRẠNG THÁI TRANG CHỦ</h3>
+            <p id="publishStatusText" style="margin-bottom: 15px; font-weight: bold;"></p>
+            <div class="grid-2">
+                <button class="btn-green" onclick="togglePublish(true)">🚀 Công Bố Bảng Đấu (Ẩn Form Đăng Ký)</button>
+                <button class="btn-yellow" onclick="togglePublish(false)">🔄 Mở Lại Form Đăng Ký (Ẩn Bảng Đấu)</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>1. Danh Sách Các Đội Đã Đăng Ký</h2>
+            <button onclick="loadTeams()" style="width: auto; padding: 5px 15px; margin-bottom: 10px;">🔄 Làm mới</button>
+            <table id="teamsTable">
+                <thead><tr><th>Tên Đội</th><th>Tag</th><th>Đội Trưởng</th><th>SĐT / Zalo</th><th>Discord</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>2. Ghép Cặp & Cập Nhật Kết Quả Thi Đấu</h2>
+            <div id="matchesContainer"></div>
+            <button class="btn-green" onclick="saveAllMatches()" style="margin-top: 15px; font-size: 16px;">💾 LƯU TOÀN BỘ LỊCH THI ĐẤU & KẾT QUẢ</button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://qxrovptliyozkiktcvst.supabase.co'; 
+    const SUPABASE_ANON_KEY = 'sb_publishable_0YYA8-eml_uTO6McECoBiQ_xW_mE8My'; 
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let registeredTeamsList = [];
+
+    async function loginAdmin() {
+        const u = document.getElementById('adminUser').value;
+        const p = document.getElementById('adminPass').value;
+        const { data, error } = await supabaseClient.from('admins').select('*').eq('username', u).eq('password', p).single();
+        
+        if (data) {
+            alert('✅ Đăng nhập QTV thành công!');
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('adminDashboard').style.display = 'block';
+            await loadTeams();
+            await loadSettings();
+            await loadMatches();
+        } else {
+            alert('❌ Sai tài khoản hoặc mật khẩu!');
+        }
+    }
+
+    async function loadSettings() {
+        const { data } = await supabaseClient.from('settings').select('*').eq('id', 'global').single();
+        const text = document.getElementById('publishStatusText');
+        if (data && data.is_bracket_published) {
+            text.innerHTML = '🟢 Trang chủ đang hiển thị: <span style="color:#28a745">BẢNG THI ĐẤU & KẾT QUẢ</span>';
+        } else {
+            text.innerHTML = '🟡 Trang chủ đang hiển thị: <span style="color:var(--val-yellow)">FORM ĐĂNG KÝ THI ĐẤU</span>';
+        }
+    }
+
+    async function togglePublish(status) {
+        await supabaseClient.from('settings').update({ is_bracket_published: status }).eq('id', 'global');
+        alert(status ? '🚀 Đã công bố Bảng đấu lên Trang chủ!' : '🔄 Đã chuyển Trang chủ về Form Đăng ký!');
+        loadSettings();
+    }
+
+    async function loadTeams() {
+        const { data } = await supabaseClient.from('registrations').select('*');
+        registeredTeamsList = data || [];
+        const tbody = document.querySelector('#teamsTable tbody');
+        tbody.innerHTML = '';
+        registeredTeamsList.forEach(t => {
+            tbody.innerHTML += `<tr><td><strong>${t.team_name}</strong></td><td>${t.team_tag}</td><td>${t.leader_name}</td><td>${t.leader_phone}</td><td>${t.leader_discord}</td></tr>`;
+        });
+    }
+
+    async function loadMatches() {
+        const { data: matches } = await supabaseClient.from('matches').select('*').order('id');
+        const container = document.getElementById('matchesContainer');
+        container.innerHTML = '';
+
+        // Tạo options cho dropdown chọn đội
+        let teamOptions = `<option value="">-- Chưa xác định --</option>`;
+        registeredTeamsList.forEach(t => { teamOptions += `<option value="${t.team_name}">${t.team_name} (${t.team_tag})</option>`; });
+
+        matches.forEach(m => {
+            container.innerHTML += `
+                <div class="match-box" id="match_${m.id}">
+                    <h3 style="color: var(--val-red); margin-bottom: 10px;">${m.round_name}</h3>
+                    <div class="grid-2">
+                        <div>
+                            <label>Đội 1:</label>
+                            <select class="t1">${teamOptions}</select>
+                        </div>
+                        <div>
+                            <label>Đội 2:</label>
+                            <select class="t2">${teamOptions}</select>
+                        </div>
+                    </div>
+                    <div class="grid-2" style="margin-top: 10px;">
+                        <div>
+                            <label>Thời gian diễn ra (Để trống nếu chưa có):</label>
+                            <input type="text" class="time" placeholder="VD: 20:00 - Ngày 15/07/2026" value="${m.match_time || ''}">
+                        </div>
+                        <div>
+                            <label>Tỷ số trận đấu (Để trống nếu chưa bắn):</label>
+                            <input type="text" class="score" placeholder="VD: 1 - 0 hoặc 2 - 1" value="${m.score || ''}">
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <label style="color: var(--val-yellow);">👑 Đội Chiến Thắng (Chọn khi trận đấu kết thúc):</label>
+                        <select class="win">${teamOptions}</select>
+                    </div>
+                </div>
+            `;
+            // Gán giá trị cũ vào select
+            const box = document.getElementById(`match_${m.id}`);
+            if (m.team1_name) box.querySelector('.t1').value = m.team1_name;
+            if (m.team2_name) box.querySelector('.t2').value = m.team2_name;
+            if (m.winner) box.querySelector('.win').value = m.winner;
+        });
+    }
+
+    async function saveAllMatches() {
+        const ids = ['bk1', 'bk2', 'ck'];
+        for (let id of ids) {
+            const box = document.getElementById(`match_${id}`);
+            const updateData = {
+                team1_name: box.querySelector('.t1').value || null,
+                team2_name: box.querySelector('.t2').value || null,
+                match_time: box.querySelector('.time').value.trim() || null,
+                score: box.querySelector('.score').value.trim() || null,
+                winner: box.querySelector('.win').value || null
+            };
+            await supabaseClient.from('matches').update(updateData).eq('id', id);
+        }
+        alert('💾 Đã lưu thành công toàn bộ lịch đấu và kết quả!');
+        loadMatches();
+    }
+</script>
+</body>
+</html>
