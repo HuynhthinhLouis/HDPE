@@ -343,7 +343,7 @@
 
 <script>
     // ==========================================
-    // ⚠️ CHÚ Ý: ĐIỀN THÔNG TIN SUPABASE CỦA BẠN VÀO 2 DÒNG DƯỚI ĐÂY
+    // CẤU HÌNH SUPABASE
     // ==========================================
     const SUPABASE_URL = 'https://qxrovptliyozkiktcvst.supabase.co'; 
     const SUPABASE_ANON_KEY = 'sb_publishable_0YYA8-eml_uTO6McECoBiQ_xW_mE8My'; 
@@ -351,7 +351,6 @@
     const MAX_TEAMS = 4;
     let supabase = null;
 
-    // BỘ BẢO VỆ KẾT NỐI: Kiểm tra xem người dùng đã dán link Supabase thật chưa
     if (SUPABASE_URL.startsWith('http')) {
         try {
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -360,16 +359,15 @@
         }
     }
 
-    // HÀM KIỂM TRA SỐ LƯỢNG ĐỘI
+    // HÀM KIỂM TRA SỐ LƯỢNG ĐỘI ĐÃ ĐĂNG KÝ
     async function checkRegistrationStatus() {
         const banner = document.getElementById('statusBanner');
         const submitBtn = document.getElementById('submitBtn');
         const allInputs = document.querySelectorAll('#regForm input, #regForm select');
 
-        // Nếu chưa kết nối Supabase, thông báo nhắc nhở nhẹ nhàng trên banner
         if (!supabase) {
             banner.className = 'status-banner warning';
-            banner.innerHTML = '⚠️ CHƯA KẾT NỐI DATABASE: Vui lòng điền SUPABASE_URL và API KEY vào trong file HTML để tính năng đếm hoạt động!';
+            banner.innerHTML = '⚠️ CHƯA KẾT NỐI DATABASE: Vui lòng kiểm tra cấu hình Supabase!';
             return true;
         }
 
@@ -396,70 +394,80 @@
         } catch (error) {
             console.error('Lỗi kết nối kiểm tra dữ liệu:', error);
             banner.className = 'status-banner warning';
-            banner.innerHTML = '⚠️ Lỗi kết nối Supabase: Vui lòng kiểm tra lại quyền RLS (SELECT) trong Database của bạn!';
+            banner.innerHTML = '⚠️ Lỗi kết nối Supabase: Vui lòng kiểm tra quyền RLS (SELECT) trong Database của bạn!';
             return true;
         }
     }
 
     window.addEventListener('DOMContentLoaded', checkRegistrationStatus);
 
-    // XỬ LÝ KHI GỬI FORM
+    // XỬ LÝ KHI GỬI FORM (ĐÃ SỬA LỖI XỬ LÝ ĐỒNG BỘ CATCH)
     document.getElementById('regForm').addEventListener('submit', async function(e) {
         e.preventDefault(); 
         
         if (!supabase) {
-            alert('❌ Bạn chưa cấu hình đường link Supabase trong mã trang web (dòng 241). Vui lòng điền thông tin trước khi gửi đăng ký!');
+            alert('❌ Bạn chưa cấu hình đường link Supabase trong trang web. Vui lòng kiểm tra lại!');
             return;
         }
 
         const submitBtn = document.getElementById('submitBtn');
         submitBtn.disabled = true;
-        submitBtn.innerText = 'Đang kiểm tra suất trống cuối cùng...';
-
-        const isStillOpen = await checkRegistrationStatus();
-        if (!isStillOpen) {
-            alert('❌ Rất tiếc! Một đội tuyển khác vừa gửi form trước bạn vài giây và lấp đầy suất cuối cùng.');
-            return;
-        }
-
-        submitBtn.innerText = 'Đang tiến hành gửi dữ liệu lên BTC...';
-
-        const registrationData = {
-            team_name: document.getElementById('teamName').value,
-            team_tag: document.getElementById('teamTag').value,
-            leader_name: document.getElementById('leaderName').value,
-            leader_discord: document.getElementById('leaderDiscord').value,
-            leader_phone: document.getElementById('leaderPhone').value,
-            
-            p1_id: document.getElementById('p1_id').value, p1_rank: document.getElementById('p1_rank').value, p1_role: document.getElementById('p1_role').value,
-            p2_id: document.getElementById('p2_id').value, p2_rank: document.getElementById('p2_rank').value, p2_role: document.getElementById('p2_role').value,
-            p3_id: document.getElementById('p3_id').value, p3_rank: document.getElementById('p3_rank').value, p3_role: document.getElementById('p3_role').value,
-            p4_id: document.getElementById('p4_id').value, p4_rank: document.getElementById('p4_rank').value, p4_role: document.getElementById('p4_role').value,
-            p5_id: document.getElementById('p5_id').value, p5_rank: document.getElementById('p5_rank').value, p5_role: document.getElementById('p5_role').value,
-            
-            p6_id: document.getElementById('p6_id').value || null, 
-            p6_rank: document.getElementById('p6_rank').value || null, 
-            p6_role: document.getElementById('p6_role').value || null
-        };
+        submitBtn.innerText = 'Đang kiểm tra suất trống...';
 
         try {
+            const isStillOpen = await checkRegistrationStatus();
+            if (!isStillOpen) {
+                alert('❌ Rất tiếc! Một đội tuyển khác vừa gửi form trước bạn vài giây và lấp đầy suất cuối cùng.');
+                return;
+            }
+
+            submitBtn.innerText = 'Đang tiến hành gửi dữ liệu lên BTC...';
+
+            const registrationData = {
+                team_name: document.getElementById('teamName').value,
+                team_tag: document.getElementById('teamTag').value,
+                leader_name: document.getElementById('leaderName').value,
+                leader_discord: document.getElementById('leaderDiscord').value,
+                leader_phone: document.getElementById('leaderPhone').value,
+                
+                p1_id: document.getElementById('p1_id').value, p1_rank: document.getElementById('p1_rank').value, p1_role: document.getElementById('p1_role').value,
+                p2_id: document.getElementById('p2_id').value, p2_rank: document.getElementById('p2_rank').value, p2_role: document.getElementById('p2_role').value,
+                p3_id: document.getElementById('p3_id').value, p3_rank: document.getElementById('p3_rank').value, p3_role: document.getElementById('p3_role').value,
+                p4_id: document.getElementById('p4_id').value, p4_rank: document.getElementById('p4_rank').value, p4_role: document.getElementById('p4_role').value,
+                p5_id: document.getElementById('p5_id').value, p5_rank: document.getElementById('p5_rank').value, p5_role: document.getElementById('p5_role').value,
+                
+                p6_id: document.getElementById('p6_id').value || null, 
+                p6_rank: document.getElementById('p6_rank').value || null, 
+                p6_role: document.getElementById('p6_role').value || null
+            };
+
+            // Thực hiện thao tác Insert vào Database
             const { error } = await supabase
                 .from('registrations')
                 .insert([registrationData]);
 
-            if (error) throw error;
+            // Ném lỗi trực tiếp xuống khối catch nếu database từ chối
+            if (error) {
+                throw error;
+            }
 
+            // Hoàn toàn thành công mới báo thông báo này
             alert(`🎉 Chúc mừng! Đội tuyển "${registrationData.team_name}" đã hoàn tất đăng ký tham gia HDPE Premier League thành công!`);
             document.getElementById('regForm').reset();
             await checkRegistrationStatus();
             
         } catch (error) {
-            console.error('Lỗi khi đẩy dữ liệu:', error);
+            console.error('Lỗi chi tiết từ hệ thống:', error);
+            
             if (error.code === '23505') {
                 alert('❌ Tên Đội tuyển này đã có người đăng ký trước đó rồi! Vui lòng chọn một tên đội khác.');
+            } else if (error.code === '42P01') {
+                alert('❌ Lỗi hệ thống: Bảng dữ liệu "registrations" chưa được tạo trên Supabase! Vui lòng chạy lệnh SQL để tạo bảng.');
             } else {
-                alert('❌ Có lỗi xảy ra từ Database: ' + error.message);
+                alert('❌ Gửi đăng ký thất bại! Lỗi Database: ' + (error.message || 'Vui lòng kiểm tra quyền RLS (INSERT).'));
             }
+        } finally {
+            // Khôi phục lại nút gửi khi hoàn tất (dù thành công hay thất bại)
             submitBtn.disabled = false;
             submitBtn.innerText = 'Gửi Đăng Ký Ngay';
         }
