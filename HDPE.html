@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Ký - HDPE Premier League</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --val-red: #ff4655;
+            --val-dark: #0f1923;
+            --val-card: #1f2d3d;
+            --val-text: #ece8e1;
+            --val-gray: #768079;
+            --val-yellow: #ffd700;
+            --val-glow: rgba(255, 70, 85, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--val-dark);
+            color: var(--val-text);
+            line-height: 1.6;
+            padding: 20px;
+            background-image: 
+                linear-gradient(rgba(15, 25, 35, 0.85), rgba(15, 25, 35, 0.95)), 
+                url('https://images4.alphacoders.com/136/1363796.jpeg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: var(--val-card);
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-top: 6px solid var(--val-red);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 30px var(--val-glow);
+            position: relative;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--val-text);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 5px;
+            font-size: 32px;
+            font-weight: 900;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--val-red);
+            font-weight: bold;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* KHỐI HIỂN THỊ SỐ LƯỢNG ĐỘI */
+        .status-banner {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid var(--val-red);
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-banner.locked {
+            border-color: var(--val-gray);
+            background: rgba(118, 128, 121, 0.2);
+            color: var(--val-gray);
+        }
+
+        .status-banner.warning {
+            border-color: var(--val-yellow);
+            color: var(--val-yellow);
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .status-banner span {
+            color: var(--val-yellow);
+            font-size: 20px;
+        }
+
+        .rules-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--val-gray);
+            padding: 20px;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .rules-box h3 { color: var(--val-red); text-transform: uppercase; margin-bottom: 10px; }
+        .rules-box ul { list-style-type: square; padding-left: 20px; }
+        .rules-box li { margin-bottom: 8px; }
+
+        .section-title {
+            border-left: 4px solid var(--val-red);
+            padding-left: 12px;
+            margin: 30px 0 15px 0;
+            font-size: 18px;
+            text-transform: uppercase;
+            color: var(--val-text);
+            background: linear-gradient(90deg, rgba(255, 70, 85, 0.15), transparent);
+            padding-top: 6px;
+            padding-bottom: 6px;
+            font-weight: bold;
+        }
+
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 7px; font-weight: 600; font-size: 14px; color: #c4c4c4; }
+
+        input[type="text"], input[type="tel"], select {
+            width: 100%; padding: 12px 15px; background: var(--val-dark);
+            border: 1px solid #334455; color: var(--val-text); font-size: 14px; outline: none; transition: all 0.3s;
+        }
+
+        input:disabled, select:disabled, input[type="checkbox"]:disabled {
+            background: #151c24; border-color: #2a3540; color: #556270; cursor: not-allowed;
+        }
+
+        input[type="text"]:focus, input[type="tel"]:focus, select:focus {
+            border-color: var(--val-red); box-shadow: 0 0 10px rgba(255, 70, 85, 0.2);
+        }
+
+        .player-row {
+            display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px;
+            margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 15px; border-left: 3px solid var(--val-gray);
+        }
+
+        .player-row.sub { border-left-color: var(--val-yellow); background: rgba(255, 215, 0, 0.02); }
+
+        .btn-submit {
+            display: block; width: 100%; padding: 16px; margin-top: 40px;
+            background: var(--val-red); color: white; border: none; font-size: 18px;
+            font-weight: bold; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: all 0.3s;
+        }
+
+        .btn-submit:hover:not(:disabled) { background: #e03e4d; transform: translateY(-2px); }
+        .btn-submit:disabled { background: var(--val-gray); cursor: not-allowed; }
+
+        .checkbox-group { display: flex; align-items: flex-start; margin-top: 25px; }
+        .checkbox-group input { margin-right: 12px; margin-top: 4px; width: 18px; height: 18px; accent-color: var(--val-red); cursor: pointer; }
+        .note { font-size: 12px; color: #a0a0a0; margin-top: 5px; }
+
+        @media (max-width: 650px) {
+            .player-row { grid-template-columns: 1fr; gap: 10px; }
+            .container { padding: 20px; }
+            h1 { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>HDPE PREMIER LEAGUE</h1>
+    <div class="subtitle">VALORANT TOURNAMENT REGISTRATION</div>
+
+    <div id="statusBanner" class="status-banner">
+        Đang kiểm tra số lượng đội đăng ký từ hệ thống...
+    </div>
+
+    <div class="rules-box">
+        <h3>Thể lệ & Quy định giải đấu</h3>
+        <ul>
+            <li><strong>Quy mô giải đấu:</strong> Giới hạn duy nhất đúng <strong>04 Đội tuyển</strong> đăng ký sớm nhất. Cổng đăng ký sẽ tự động khóa và ngừng nhận dữ liệu ngay khi đủ số lượng.</li>
+            <li><strong>Thể thức thi đấu:</strong> Vòng Bán kết thi đấu BO1 (Chia cặp ngẫu nhiên). Hai đội tuyển chiến thắng sẽ bước vào Vòng Chung kết tranh ngôi vô địch bằng loạt trận BO3.</li>
+            <li><strong>Tài khoản thi đấu:</strong> Tuyển thủ bắt buộc sử dụng đúng Riot ID đã đăng ký. Nghiêm cấm gian lận (hack/cheat) hoặc sử dụng tài khoản của người khác (smurf).</li>
+            <li><strong>Thời gian & Điểm danh:</strong> Toàn đội phải có mặt tập trung tại phòng chờ Discord trước giờ thi đấu 15 phút. Quá giờ thi đấu 10 phút không lý do sẽ bị xử thua cuộc lập tức.</li>
+        </ul>
+    </div>
+
+    <form id="regForm">
+        <div class="section-title">1. Thông Tin Đội Thi Đấu</div>
+        <div class="form-group">
+            <label>Tên Đội (Team Name) *</label>
+            <input type="text" id="teamName" placeholder="VD: Sentinels" required>
+        </div>
+        <div class="form-group">
+            <label>Tag Đội (Viết tắt tối đa 5 ký tự) *</label>
+            <input type="text" id="teamTag" placeholder="VD: SEN" maxlength="5" required>
+        </div>
+
+        <div class="section-title">2. Thông Tin Đội Trưởng</div>
+        <div class="form-group">
+            <label>Họ và Tên Thật *</label>
+            <input type="text" id="leaderName" placeholder="Nhập tên người đại diện liên hệ" required>
+        </div>
+        <div class="form-group">
+            <label>Discord ID *</label>
+            <input type="text" id="leaderDiscord" placeholder="VD: Tenz#1234 hoặc tenz_username" required>
+        </div>
+        <div class="form-group">
+            <label>Số Điện Thoại / Zalo *</label>
+            <input type="tel" id="leaderPhone" placeholder="Dùng để BTC gọi trực tiếp khi có sự cố" required>
+        </div>
+
+        <div class="section-title">3. Đội hình thi đấu (5 Chính thức - 1 Dự bị)</div>
+        <p class="note" style="margin-bottom: 15px; color: var(--val-red);">* Lưu ý quan trọng: Ghi chính xác Riot ID gồm cả Tên#Tag (Ví dụ: TenZ#NA1)</p>
+        
+        <label>Tuyển thủ 1 (Đội Trưởng) *</label>
+        <div class="player-row">
+            <input type="text" id="p1_id" placeholder="Riot ID (Tên#Tag)" required>
+            <select id="p1_rank" required>
+                <option value="">Chọn Rank...</option>
+                <option value="Sắt - Bạc">Sắt - Bạc</option>
+                <option value="Vàng - Bạch Kim">Vàng - Bạch Kim</option>
+                <option value="Kim Cương - Cao Thủ">Kim Cương - Cao Thủ</option>
+                <option value="Bất Tử - Radiant">Bất Tử - Radiant</option>
+            </select>
+            <select id="p1_role" required>
+                <option value="">Chọn Vai trò...</option>
+                <option value="Duelist">Duelist</option>
+                <option value="Initiator">Initiator</option>
+                <option value="Controller">Controller</option>
+                <option value="Sentinel">Sentinel</option>
+                <option value="Flex">Flex</option>
+            </select>
+        </div>
+
+        <label>Tuyển thủ 2 *</label>
+        <div class="player-row">
+            <input type="text" id="p2_id" placeholder="Riot ID (Tên#Tag)" required>
+            <select id="p2_rank" required>
+                <option value="">Chọn Rank...</option>
+                <option value="Sắt - Bạc">Sắt - Bạc</option>
+                <option value="Vàng - Bạch Kim">Vàng - Bạch Kim</option>
+                <option value="Kim Cương - Cao Thủ">Kim Cương - Cao Thủ</option>
+                <option value="Bất Tử - Radiant">Bất Tử - Radiant</option>
+            </select>
+            <select id="p2_role" required>
+                <option value="">Chọn Vai trò...</option>
+                <option value="Duelist">Duelist</option>
+                <option value="Initiator">Initiator</option>
+                <option value="Controller">Controller</option>
+                <option value="Sentinel">Sentinel</option>
+                <option value="Flex">Flex</option>
+            </select>
+        </div>
+
+        <label>Tuyển thủ 3 *</label>
+        <div class="player-row">
+            <input type="text" id="p3_id" placeholder="Riot ID (Tên#Tag)" required>
+            <select id="p3_rank" required>
+                <option value="">Chọn Rank...</option>
+                <option value="Sắt - Bạc">Sắt - Bạc</option>
+                <option value="Vàng - Bạch Kim">Vàng - Bạch Kim</option>
+                <option value="Kim Cương - Cao Thủ">Kim Cương - Cao Thủ</option>
+                <option value="Bất Tử - Radiant">Bất Tử - Radiant</option>
+            </select>
+            <select id="p3_role" required>
+                <option value="">Chọn Vai trò...</option>
+                <option value="Duelist">Duelist</option>
+                <option value="Initiator">Initiator</option>
+                <option value="Controller">Controller</option>
+                <option value="Sentinel">Sentinel</option>
+                <option value="Flex">Flex</option>
+            </select>
+        </div>
+
+        <label>Tuyển thủ 4 *</label>
+        <div class="player-row">
+            <input type="text" id="p4_id" placeholder="Riot ID (Tên#Tag)" required>
+            <select id="p4_rank" required>
+                <option value="">Chọn Rank...</option>
+                <option value="Sắt - Bạc">Sắt - Bạc</option>
+                <option value="Vàng - Bạch Kim">Vàng - Bạch Kim</option>
+                <option value="Kim Cương - Cao Thủ">Kim Cương - Cao Thủ</option>
+                <option value="Bất Tử - Radiant">Bất Tử - Radiant</option>
+            </select>
+            <select id="p4_role" required>
+                <option value="">Chọn Vai trò...</option>
+                <option value="Duelist">Duelist</option>
+                <option value="Initiator">Initiator</option>
+                <option value="Controller">Controller</option>
+                <option value="Sentinel">Sentinel</option>
+                <option value="Flex">Flex</option>
+            </select>
+        </div>
+
+        <label>Tuyển thủ 5 *</label>
+        <div class="player-row">
+            <input type="text" id="p5_id" placeholder="Riot ID (Tên#Tag)" required>
+            <select id="p5_rank" required>
+                <option value="">Chọn Rank...</option>
+                <option value="Sắt - Bạc">Sắt - Bạc</option>
+                <option value="Vàng - Bạch Kim">Vàng - Bạch Kim</option>
+                <option value="Kim Cương - Cao Thủ">Kim Cương - Cao Thủ</option>
+                <option value="Bất Tử - Radiant">Bất Tử - Radiant</option>
+            </select>
+            <select id="p5_role" required>
+                <option value="">Chọn Vai trò...</option>
+                <option value="Duelist">Duelist</option>
+                <option value="Initiator">Initiator</option>
+                <option value="Controller">Controller</option>
+                <option value="Sentinel">Sentinel</option>
+                <option value="Flex">Flex</option>
+            </select>
+        </div>
+
+        <label style="color: var(--val-yellow); margin-top: 15px;">Tuyển thủ 6 (Dự Bị - Không bắt buộc)</label>
+        <div class="player-row sub">
+            <input type="text" id="p6_id" placeholder="Riot ID (Tên#Tag)">
+            <select id="p6_rank">
+                <option value="">Chọn Rank...</option>
+                <option value="Sắt - Bạc">Sắt - Bạc</option>
+                <option value="Vàng - Bạch Kim">Vàng - Bạch Kim</option>
+                <option value="Kim Cương - Cao Thủ">Kim Cương - Cao Thủ</option>
+                <option value="Bất Tử - Radiant">Bất Tử - Radiant</option>
+            </select>
+            <select id="p6_role">
+                <option value="">Chọn Vai trò...</option>
+                <option value="Duelist">Duelist</option>
+                <option value="Initiator">Initiator</option>
+                <option value="Controller">Controller</option>
+                <option value="Sentinel">Sentinel</option>
+                <option value="Flex">Flex</option>
+            </select>
+        </div>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="agreeTerms" required>
+            <label for="agreeTerms">Tôi xác nhận mình là Đội trưởng, các thông tin trên hoàn toàn chính xác và toàn đội sẽ tuân thủ nghiêm ngặt Thể lệ của HDPE Premier League.</label>
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn-submit">Gửi Đăng Ký Ngay</button>
+    </form>
+</div>
+
+<script>
+    // ==========================================
+    // ⚠️ CHÚ Ý: ĐIỀN THÔNG TIN SUPABASE CỦA BẠN VÀO 2 DÒNG DƯỚI ĐÂY
+    // ==========================================
+    const SUPABASE_URL = 'https://qxrovptliyozkiktcvst.supabase.co'; 
+    const SUPABASE_ANON_KEY = 'sb_publishable_0YYA8-eml_uTO6McECoBiQ_xW_mE8My'; 
+
+    const MAX_TEAMS = 4;
+    let supabase = null;
+
+    // BỘ BẢO VỆ KẾT NỐI: Kiểm tra xem người dùng đã dán link Supabase thật chưa
+    if (SUPABASE_URL.startsWith('http')) {
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (err) {
+            console.error("Lỗi khởi tạo Supabase:", err);
+        }
+    }
+
+    // HÀM KIỂM TRA SỐ LƯỢNG ĐỘI
+    async function checkRegistrationStatus() {
+        const banner = document.getElementById('statusBanner');
+        const submitBtn = document.getElementById('submitBtn');
+        const allInputs = document.querySelectorAll('#regForm input, #regForm select');
+
+        // Nếu chưa kết nối Supabase, thông báo nhắc nhở nhẹ nhàng trên banner
+        if (!supabase) {
+            banner.className = 'status-banner warning';
+            banner.innerHTML = '⚠️ CHƯA KẾT NỐI DATABASE: Vui lòng điền SUPABASE_URL và API KEY vào trong file HTML để tính năng đếm hoạt động!';
+            return true;
+        }
+
+        try {
+            const { count, error } = await supabase
+                .from('registrations')
+                .select('*', { count: 'exact', head: true });
+
+            if (error) throw error;
+
+            if (count >= MAX_TEAMS) {
+                banner.className = 'status-banner locked';
+                banner.innerHTML = `🔒 CỔNG ĐĂNG KÝ ĐÃ KHÓA (ĐÃ ĐỦ ${MAX_TEAMS}/${MAX_TEAMS} ĐỘI)`;
+                
+                allInputs.forEach(element => element.disabled = true);
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'Cổng Đăng Ký Đã Khóa';
+                return false;
+            } else {
+                banner.className = 'status-banner';
+                banner.innerHTML = `🔥 Đã đăng ký: <span>${count}/${MAX_TEAMS}</span> Đội (Còn trống ${MAX_TEAMS - count} suất cuối)`;
+                return true;
+            }
+        } catch (error) {
+            console.error('Lỗi kết nối kiểm tra dữ liệu:', error);
+            banner.className = 'status-banner warning';
+            banner.innerHTML = '⚠️ Lỗi kết nối Supabase: Vui lòng kiểm tra lại quyền RLS (SELECT) trong Database của bạn!';
+            return true;
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', checkRegistrationStatus);
+
+    // XỬ LÝ KHI GỬI FORM
+    document.getElementById('regForm').addEventListener('submit', async function(e) {
+        e.preventDefault(); 
+        
+        if (!supabase) {
+            alert('❌ Bạn chưa cấu hình đường link Supabase trong mã trang web (dòng 241). Vui lòng điền thông tin trước khi gửi đăng ký!');
+            return;
+        }
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Đang kiểm tra suất trống cuối cùng...';
+
+        const isStillOpen = await checkRegistrationStatus();
+        if (!isStillOpen) {
+            alert('❌ Rất tiếc! Một đội tuyển khác vừa gửi form trước bạn vài giây và lấp đầy suất cuối cùng.');
+            return;
+        }
+
+        submitBtn.innerText = 'Đang tiến hành gửi dữ liệu lên BTC...';
+
+        const registrationData = {
+            team_name: document.getElementById('teamName').value,
+            team_tag: document.getElementById('teamTag').value,
+            leader_name: document.getElementById('leaderName').value,
+            leader_discord: document.getElementById('leaderDiscord').value,
+            leader_phone: document.getElementById('leaderPhone').value,
+            
+            p1_id: document.getElementById('p1_id').value, p1_rank: document.getElementById('p1_rank').value, p1_role: document.getElementById('p1_role').value,
+            p2_id: document.getElementById('p2_id').value, p2_rank: document.getElementById('p2_rank').value, p2_role: document.getElementById('p2_role').value,
+            p3_id: document.getElementById('p3_id').value, p3_rank: document.getElementById('p3_rank').value, p3_role: document.getElementById('p3_role').value,
+            p4_id: document.getElementById('p4_id').value, p4_rank: document.getElementById('p4_rank').value, p4_role: document.getElementById('p4_role').value,
+            p5_id: document.getElementById('p5_id').value, p5_rank: document.getElementById('p5_rank').value, p5_role: document.getElementById('p5_role').value,
+            
+            p6_id: document.getElementById('p6_id').value || null, 
+            p6_rank: document.getElementById('p6_rank').value || null, 
+            p6_role: document.getElementById('p6_role').value || null
+        };
+
+        try {
+            const { error } = await supabase
+                .from('registrations')
+                .insert([registrationData]);
+
+            if (error) throw error;
+
+            alert(`🎉 Chúc mừng! Đội tuyển "${registrationData.team_name}" đã hoàn tất đăng ký tham gia HDPE Premier League thành công!`);
+            document.getElementById('regForm').reset();
+            await checkRegistrationStatus();
+            
+        } catch (error) {
+            console.error('Lỗi khi đẩy dữ liệu:', error);
+            if (error.code === '23505') {
+                alert('❌ Tên Đội tuyển này đã có người đăng ký trước đó rồi! Vui lòng chọn một tên đội khác.');
+            } else {
+                alert('❌ Có lỗi xảy ra từ Database: ' + error.message);
+            }
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Gửi Đăng Ký Ngay';
+        }
+    });
+</script>
+
+</body>
+</html>
