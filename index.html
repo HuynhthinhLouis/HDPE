@@ -66,7 +66,6 @@
             letter-spacing: 2px;
         }
 
-        /* KHỐI HIỂN THỊ SỐ LƯỢNG ĐỘI */
         .status-banner {
             background: rgba(0, 0, 0, 0.4);
             border: 2px solid var(--val-red);
@@ -129,12 +128,70 @@
             border: 1px solid #334455; color: var(--val-text); font-size: 14px; outline: none; transition: all 0.3s;
         }
 
-        input:disabled, select:disabled, input[type="checkbox"]:disabled {
+        input:disabled, select:disabled, input[type="checkbox"]:disabled, input[type="file"]:disabled {
             background: #151c24; border-color: #2a3540; color: #556270; cursor: not-allowed;
         }
 
         input[type="text"]:focus, input[type="tel"]:focus, select:focus {
             border-color: var(--val-red); box-shadow: 0 0 10px rgba(255, 70, 85, 0.2);
+        }
+
+        /* STYLE CHO KHUNG UPLOAD LOGO */
+        .file-upload-wrapper {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            background: var(--val-dark);
+            padding: 15px;
+            border: 1px dashed #334455;
+        }
+        
+        .file-upload-wrapper input[type="file"] {
+            flex: 1;
+            color: #a0a0a0;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .file-upload-wrapper input[type="file"]::file-selector-button {
+            background: var(--val-card);
+            color: var(--val-text);
+            border: 1px solid var(--val-red);
+            padding: 8px 15px;
+            margin-right: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+
+        .file-upload-wrapper input[type="file"]::file-selector-button:hover {
+            background: var(--val-red);
+        }
+
+        .logo-preview {
+            width: 80px;
+            height: 80px;
+            background: #151c24;
+            border: 2px solid #334455;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .logo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        .logo-preview span {
+            font-size: 10px;
+            color: var(--val-gray);
+            text-align: center;
+            padding: 5px;
         }
 
         .player-row {
@@ -161,6 +218,8 @@
             .player-row { grid-template-columns: 1fr; gap: 10px; }
             .container { padding: 20px; }
             h1 { font-size: 24px; }
+            .file-upload-wrapper { flex-direction: column; align-items: flex-start; }
+            .logo-preview { align-self: center; width: 100px; height: 100px; }
         }
     </style>
 </head>
@@ -193,6 +252,17 @@
         <div class="form-group">
             <label>Tag Đội (Viết tắt tối đa 5 ký tự) *</label>
             <input type="text" id="teamTag" placeholder="VD: SEN" maxlength="5" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Logo Đội Tuyển (Định dạng PNG, JPG, WEBP - Tối đa 2MB) *</label>
+            <div class="file-upload-wrapper">
+                <input type="file" id="teamLogo" accept="image/png, image/jpeg, image/webp" required>
+                <div class="logo-preview">
+                    <img id="previewImg" src="" alt="Logo">
+                    <span id="previewText">Chưa có Logo</span>
+                </div>
+            </div>
         </div>
 
         <div class="section-title">2. Thông Tin Đội Trưởng</div>
@@ -343,14 +413,12 @@
 
 <script>
     // ==========================================
-    // CẤU HÌNH SUPABASE (ĐÃ ĐỔI TÊN BIẾN TRÁNH XUNG ĐỘT)
+    // CẤU HÌNH SUPABASE
     // ==========================================
     const SUPABASE_URL = 'https://qxrovptliyozkiktcvst.supabase.co'; 
     const SUPABASE_ANON_KEY = 'sb_publishable_0YYA8-eml_uTO6McECoBiQ_xW_mE8My'; 
 
     const MAX_TEAMS = 4;
-    
-    // Sử dụng tên biến 'supabaseClient' để tránh trùng với 'window.supabase' từ CDN
     let supabaseClient = null;
 
     if (SUPABASE_URL.startsWith('http')) {
@@ -361,7 +429,32 @@
         }
     }
 
-    // HÀM KIỂM TRA SỐ LƯỢNG ĐỘI ĐÃ ĐĂNG KÝ
+    // XỬ LÝ PREVIEW (XEM TRƯỚC) LOGO KHI CHỌN FILE
+    document.getElementById('teamLogo').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const previewImg = document.getElementById('previewImg');
+        const previewText = document.getElementById('previewText');
+
+        if (file) {
+            // Kiểm tra dung lượng (giới hạn 2MB = 2 * 1024 * 1024 bytes)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('⚠️ Dung lượng ảnh vượt quá 2MB! Vui lòng chọn ảnh nhẹ hơn để tải nhanh hơn.');
+                this.value = '';
+                return;
+            }
+
+            // Tạo link tạm để hiển thị ảnh preview
+            previewImg.src = URL.createObjectURL(file);
+            previewImg.style.display = 'block';
+            previewText.style.display = 'none';
+        } else {
+            previewImg.src = '';
+            previewImg.style.display = 'none';
+            previewText.style.display = 'block';
+        }
+    });
+
+    // HÀM KIỂM TRA SỐ LƯỢNG ĐỘI
     async function checkRegistrationStatus() {
         const banner = document.getElementById('statusBanner');
         const submitBtn = document.getElementById('submitBtn');
@@ -396,14 +489,14 @@
         } catch (error) {
             console.error('Lỗi kết nối kiểm tra dữ liệu:', error);
             banner.className = 'status-banner warning';
-            banner.innerHTML = '⚠️ Lỗi kết nối Supabase: Vui lòng kiểm tra quyền RLS (SELECT) trong Database của bạn!';
+            banner.innerHTML = '⚠️ Lỗi kết nối Supabase: Vui lòng kiểm tra quyền RLS (SELECT) trong Database!';
             return true;
         }
     }
 
     window.addEventListener('DOMContentLoaded', checkRegistrationStatus);
 
-    // XỬ LÝ KHI GỬI FORM
+    // XỬ LÝ KHI GỬI FORM (BAO GỒM UPLOAD LOGO)
     document.getElementById('regForm').addEventListener('submit', async function(e) {
         e.preventDefault(); 
         
@@ -417,17 +510,55 @@
         submitBtn.innerText = 'Đang kiểm tra suất trống...';
 
         try {
+            // 1. Kiểm tra lại suất trống
             const isStillOpen = await checkRegistrationStatus();
             if (!isStillOpen) {
                 alert('❌ Rất tiếc! Một đội tuyển khác vừa gửi form trước bạn vài giây và lấp đầy suất cuối cùng.');
                 return;
             }
 
-            submitBtn.innerText = 'Đang tiến hành gửi dữ liệu lên BTC...';
+            // 2. Tiến hành upload logo lên Supabase Storage
+            submitBtn.innerText = 'Đang tải Logo lên hệ thống...';
+            const fileInput = document.getElementById('teamLogo');
+            const file = fileInput.files[0];
+            let logoPublicUrl = '';
+
+            if (file) {
+                // Tạo tên file độc nhất: Time_TagDoi.ext (VD: 17182938_SEN.png) để không bị trùng
+                const fileExt = file.name.split('.').pop();
+                const teamTagClean = document.getElementById('teamTag').value.trim().replace(/[^a-zA-Z0-9]/g, '');
+                const fileName = `${Date.now()}_${teamTagClean}.${fileExt}`;
+                const filePath = `logos/${fileName}`;
+
+                // Upload lên bucket 'team-logos'
+                const { error: uploadError } = await supabaseClient
+                    .storage
+                    .from('team-logos')
+                    .upload(filePath, file);
+
+                if (uploadError) {
+                    if (uploadError.message.includes('not found') || uploadError.message.includes('policy')) {
+                        throw new Error('Chưa tạo Bucket lưu trữ hoặc lỗi quyền RLS Storage! Hãy chạy mã SQL ở Bước 1.');
+                    }
+                    throw uploadError;
+                }
+
+                // Lấy đường dẫn xem công khai của ảnh vừa upload
+                const { data: urlData } = supabaseClient
+                    .storage
+                    .from('team-logos')
+                    .getPublicUrl(filePath);
+
+                logoPublicUrl = urlData.publicUrl;
+            }
+
+            // 3. Tiến hành lưu thông tin đội + Link logo vào Database
+            submitBtn.innerText = 'Đang ghi nhận danh sách tuyển thủ...';
 
             const registrationData = {
                 team_name: document.getElementById('teamName').value,
                 team_tag: document.getElementById('teamTag').value,
+                logo_url: logoPublicUrl, // <= Đường dẫn ảnh đã tải lên
                 leader_name: document.getElementById('leaderName').value,
                 leader_discord: document.getElementById('leaderDiscord').value,
                 leader_phone: document.getElementById('leaderPhone').value,
@@ -443,19 +574,20 @@
                 p6_role: document.getElementById('p6_role').value || null
             };
 
-            // Thực hiện thao tác Insert vào Database
-            const { error } = await supabaseClient
+            const { error: dbError } = await supabaseClient
                 .from('registrations')
                 .insert([registrationData]);
 
-            // Ném lỗi trực tiếp xuống khối catch nếu database từ chối
-            if (error) {
-                throw error;
-            }
+            if (dbError) throw dbError;
 
-            // Hoàn toàn thành công mới báo thông báo này
-            alert(`🎉 Chúc mừng! Đội tuyển "${registrationData.team_name}" đã hoàn tất đăng ký tham gia HDPE Premier League thành công!`);
+            // Thành công hoàn toàn
+            alert(`🎉 Chúc mừng! Đội tuyển "${registrationData.team_name}" đã hoàn tất đăng ký và tải logo lên thành công!`);
+            
+            // Reset form và xóa preview ảnh
             document.getElementById('regForm').reset();
+            document.getElementById('previewImg').style.display = 'none';
+            document.getElementById('previewText').style.display = 'block';
+            
             await checkRegistrationStatus();
             
         } catch (error) {
@@ -463,13 +595,12 @@
             
             if (error.code === '23505') {
                 alert('❌ Tên Đội tuyển này đã có người đăng ký trước đó rồi! Vui lòng chọn một tên đội khác.');
-            } else if (error.code === '42P01') {
-                alert('❌ Lỗi hệ thống: Bảng dữ liệu "registrations" chưa được tạo trên Supabase! Vui lòng chạy lệnh SQL để tạo bảng.');
+            } else if (error.code === '42703') {
+                alert('❌ Lỗi Database: Chưa thêm cột "logo_url" vào bảng registrations! Vui lòng chạy lệnh SQL ở Bước 1.');
             } else {
-                alert('❌ Gửi đăng ký thất bại! Lỗi Database: ' + (error.message || 'Vui lòng kiểm tra quyền RLS (INSERT).'));
+                alert('❌ Gửi đăng ký thất bại! Lỗi: ' + (error.message || 'Vui lòng kiểm tra lại hệ thống.'));
             }
         } finally {
-            // Khôi phục lại nút gửi khi hoàn tất (dù thành công hay thất bại)
             submitBtn.disabled = false;
             submitBtn.innerText = 'Gửi Đăng Ký Ngay';
         }
