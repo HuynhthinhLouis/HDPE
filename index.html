@@ -9,11 +9,13 @@
         :root {
             --val-red: #ff4655;
             --val-dark: #0f1923;
-            --val-card: #1f2d3d;
+            --val-card: rgba(31, 45, 61, 0.65); /* Kính mờ Card */
             --val-text: #ece8e1;
             --val-gray: #768079;
             --val-yellow: #ffd700;
-            --val-glow: rgba(255, 70, 85, 0.4);
+            --val-glow: rgba(255, 70, 85, 0.45);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-bg: rgba(255, 255, 255, 0.05);
         }
 
         * {
@@ -29,32 +31,38 @@
             line-height: 1.6;
             padding: 20px;
             background-image: 
-                linear-gradient(rgba(15, 25, 35, 0.85), rgba(15, 25, 35, 0.95)), 
+                linear-gradient(135deg, rgba(15, 25, 35, 0.85), rgba(15, 25, 35, 0.95)), 
                 url('https://images4.alphacoders.com/136/1363796.jpeg');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
+            min-height: 100vh;
         }
 
+        /* CONTAINER KÍNH MỜ (GLASSMORPHISM) */
         .container {
-            max-width: 900px;
+            max-width: 950px;
             margin: 40px auto;
             background: var(--val-card);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
             padding: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
             border-top: 6px solid var(--val-red);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 30px var(--val-glow);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7), 0 0 40px var(--val-glow);
             position: relative;
         }
 
         h1 {
             text-align: center;
-            color: var(--val-text);
+            color: #fff;
             text-transform: uppercase;
-            letter-spacing: 3px;
+            letter-spacing: 4px;
             margin-bottom: 5px;
-            font-size: 32px;
+            font-size: 34px;
             font-weight: 900;
+            text-shadow: 0 0 15px rgba(255, 70, 85, 0.6);
         }
 
         .subtitle {
@@ -64,30 +72,37 @@
             margin-bottom: 25px;
             text-transform: uppercase;
             letter-spacing: 2px;
+            font-size: 14px;
         }
 
+        /* STATUS BANNER GLASS */
         .status-banner {
-            background: rgba(0, 0, 0, 0.4);
-            border: 2px solid var(--val-red);
-            padding: 15px;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--val-red);
+            padding: 16px;
             text-align: center;
             margin-bottom: 30px;
             font-size: 16px;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 1px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(255, 70, 85, 0.2);
         }
 
         .status-banner.locked {
             border-color: var(--val-gray);
             background: rgba(118, 128, 121, 0.2);
             color: var(--val-gray);
+            box-shadow: none;
         }
 
         .status-banner.warning {
             border-color: var(--val-yellow);
             color: var(--val-yellow);
             background: rgba(255, 215, 0, 0.1);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
         }
 
         .status-banner span {
@@ -95,226 +110,245 @@
             font-size: 20px;
         }
 
+        /* RULES BOX GLASS */
         .rules-box {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--val-gray);
-            padding: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            padding: 25px;
             margin-bottom: 30px;
             font-size: 14px;
+            border-radius: 16px;
         }
 
-        .rules-box h3 { color: var(--val-red); text-transform: uppercase; margin-bottom: 10px; }
+        .rules-box h3 { color: var(--val-red); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px; }
         .rules-box ul { list-style-type: square; padding-left: 20px; }
-        .rules-box li { margin-bottom: 8px; }
+        .rules-box li { margin-bottom: 10px; }
 
         .section-title {
             border-left: 4px solid var(--val-red);
-            padding-left: 12px;
-            margin: 30px 0 15px 0;
+            padding-left: 15px;
+            margin: 35px 0 18px 0;
             font-size: 18px;
             text-transform: uppercase;
-            color: var(--val-text);
-            background: linear-gradient(90deg, rgba(255, 70, 85, 0.15), transparent);
-            padding-top: 6px;
-            padding-bottom: 6px;
+            color: #fff;
+            background: linear-gradient(90deg, rgba(255, 70, 85, 0.25), transparent);
+            padding-top: 8px;
+            padding-bottom: 8px;
             font-weight: bold;
+            border-radius: 0 8px 8px 0;
         }
 
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 7px; font-weight: 600; font-size: 14px; color: #c4c4c4; }
+        .form-group { margin-bottom: 22px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #d0d0d0; }
 
+        /* INPUTS & SELECTS GLASS */
         input[type="text"], input[type="tel"], select {
-            width: 100%; padding: 12px 15px; background: var(--val-dark);
-            border: 1px solid #334455; color: var(--val-text); font-size: 14px; outline: none; transition: all 0.3s;
+            width: 100%; 
+            padding: 14px 16px; 
+            background: rgba(15, 25, 35, 0.65);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15); 
+            color: #fff; 
+            font-size: 14px; 
+            outline: none; 
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        option {
+            background-color: #0f1923;
+            color: #fff;
+            padding: 10px;
         }
 
         input:disabled, select:disabled, input[type="checkbox"]:disabled, input[type="file"]:disabled {
-            background: #151c24; border-color: #2a3540; color: #556270; cursor: not-allowed;
+            background: rgba(21, 28, 36, 0.4); 
+            border-color: rgba(255, 255, 255, 0.05); 
+            color: #556270; 
+            cursor: not-allowed;
         }
 
         input[type="text"]:focus, input[type="tel"]:focus, select:focus {
-            border-color: var(--val-red); box-shadow: 0 0 10px rgba(255, 70, 85, 0.2);
+            border-color: var(--val-red); 
+            box-shadow: 0 0 15px rgba(255, 70, 85, 0.35);
+            background: rgba(15, 25, 35, 0.85);
         }
 
-        /* STYLE CHO KHUNG UPLOAD LOGO */
+        /* UPLOAD LOGO GLASS */
         .file-upload-wrapper {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            background: var(--val-dark);
-            padding: 15px;
-            border: 1px dashed #334455;
+            display: flex; gap: 20px; align-items: center; 
+            background: var(--glass-bg); 
+            backdrop-filter: blur(10px);
+            padding: 18px; 
+            border: 1px dashed rgba(255, 255, 255, 0.25);
+            border-radius: 12px;
         }
         
         .file-upload-wrapper input[type="file"] {
-            flex: 1;
-            color: #a0a0a0;
-            font-size: 14px;
-            cursor: pointer;
+            flex: 1; color: #a0a0a0; font-size: 14px; cursor: pointer;
         }
 
         .file-upload-wrapper input[type="file"]::file-selector-button {
-            background: var(--val-card);
-            color: var(--val-text);
-            border: 1px solid var(--val-red);
-            padding: 8px 15px;
-            margin-right: 15px;
-            cursor: pointer;
+            background: rgba(255, 70, 85, 0.2); 
+            color: #fff; 
+            border: 1px solid var(--val-red); 
+            padding: 10px 18px; 
+            margin-right: 15px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            border-radius: 8px;
             transition: all 0.2s;
-            font-weight: bold;
         }
 
-        .file-upload-wrapper input[type="file"]::file-selector-button:hover {
-            background: var(--val-red);
+        .file-upload-wrapper input[type="file"]::file-selector-button:hover { 
+            background: var(--val-red); 
+            box-shadow: 0 0 10px var(--val-glow);
         }
 
         .logo-preview {
-            width: 80px;
-            height: 80px;
-            background: #151c24;
-            border: 2px solid #334455;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            flex-shrink: 0;
+            width: 80px; height: 80px; 
+            background: rgba(0, 0, 0, 0.4); 
+            border: 1px solid var(--glass-border); 
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; 
+            overflow: hidden; flex-shrink: 0;
         }
 
-        .logo-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: none;
-        }
+        .logo-preview img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .logo-preview span { font-size: 11px; color: var(--val-gray); text-align: center; padding: 5px; }
 
-        .logo-preview span {
-            font-size: 10px;
-            color: var(--val-gray);
-            text-align: center;
-            padding: 5px;
-        }
-
+        /* PLAYER ROWS GLASS */
         .player-row {
-            display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px;
-            margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 15px; border-left: 3px solid var(--val-gray);
+            display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; 
+            margin-bottom: 15px; 
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px); 
+            padding: 18px; 
+            border: 1px solid var(--glass-border);
+            border-left: 4px solid var(--val-gray);
+            border-radius: 12px;
+            transition: transform 0.2s, border-color 0.2s;
         }
 
-        .player-row.sub { border-left-color: var(--val-yellow); background: rgba(255, 215, 0, 0.02); }
+        .player-row:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            border-left-color: #fff;
+        }
+
+        .player-row.sub { 
+            border-left-color: var(--val-yellow); 
+            background: rgba(255, 215, 0, 0.03); 
+        }
+
+        .player-row.sub:hover {
+            border-left-color: #fff;
+        }
 
         .btn-submit {
-            display: block; width: 100%; padding: 16px; margin-top: 40px;
-            background: var(--val-red); color: white; border: none; font-size: 18px;
-            font-weight: bold; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: all 0.3s;
-        }
-
-        .btn-submit:hover:not(:disabled) { background: #e03e4d; transform: translateY(-2px); }
-        .btn-submit:disabled { background: var(--val-gray); cursor: not-allowed; }
-
-        .checkbox-group { display: flex; align-items: flex-start; margin-top: 25px; }
-        .checkbox-group input { margin-right: 12px; margin-top: 4px; width: 18px; height: 18px; accent-color: var(--val-red); cursor: pointer; }
-        .note { font-size: 12px; color: #a0a0a0; margin-top: 5px; }
-
-        /* HIGHLIGHT QUY ĐỊNH RANK */
-        .rank-rule-highlight {
-            background: rgba(255, 70, 85, 0.15);
-            border: 1px solid var(--val-red);
-            padding: 10px 15px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-            color: var(--val-yellow);
-            font-size: 14px;
-        }
-
-        /* STYLE RIÊNG CHO BẢNG THI ĐẤU (BRACKET VIEW) CỦA QTV */
-        .match-card {
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid #334455;
-            margin-bottom: 25px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-
-        .match-header {
-            background: #151c24;
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #334455;
-        }
-
-        .match-round {
-            font-weight: bold;
-            color: var(--val-red);
-            text-transform: uppercase;
-            font-size: 16px;
-            letter-spacing: 1px;
-        }
-
-        .match-time {
-            font-size: 13px;
-            color: var(--val-yellow);
-            background: rgba(255, 215, 0, 0.1);
-            padding: 4px 12px;
+            display: block; width: 100%; padding: 18px; margin-top: 40px; 
+            background: linear-gradient(135deg, var(--val-red), #d63342); 
+            color: white; border: 1px solid rgba(255, 255, 255, 0.2); 
+            font-size: 18px; font-weight: bold; text-transform: uppercase; 
+            letter-spacing: 3px; cursor: pointer; 
             border-radius: 12px;
-            border: 1px solid var(--val-yellow);
-        }
-
-        .match-body {
-            padding: 30px 20px;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-        }
-
-        .team-box {
-            text-align: center;
-            flex: 1;
-            font-size: 20px;
-            font-weight: bold;
+            box-shadow: 0 10px 25px rgba(255, 70, 85, 0.4);
             transition: all 0.3s;
         }
 
+        .btn-submit:hover:not(:disabled) { 
+            background: linear-gradient(135deg, #ff5e6c, var(--val-red)); 
+            transform: translateY(-3px); 
+            box-shadow: 0 15px 30px rgba(255, 70, 85, 0.6);
+        }
+
+        .btn-submit:disabled { background: var(--val-gray); box-shadow: none; cursor: not-allowed; border-color: transparent; }
+
+        .checkbox-group { display: flex; align-items: flex-start; margin-top: 25px; }
+        .checkbox-group input { margin-right: 12px; margin-top: 4px; width: 18px; height: 18px; accent-color: var(--val-red); cursor: pointer; }
+        .note { font-size: 13px; color: #a0a0a0; margin-top: 5px; }
+
+        .rank-rule-highlight {
+            background: rgba(255, 70, 85, 0.15); 
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--val-red); 
+            padding: 14px 18px; 
+            margin-bottom: 20px; 
+            border-radius: 10px; 
+            color: var(--val-yellow); 
+            font-size: 14px;
+            box-shadow: 0 0 15px rgba(255, 70, 85, 0.15);
+        }
+
+        /* STYLE BẢNG THI ĐẤU (BRACKET VIEW) GLASS CÓ LOGO */
+        .match-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border); 
+            margin-bottom: 25px; 
+            position: relative; 
+            overflow: hidden; 
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            transition: transform 0.3s;
+        }
+        .match-card:hover { transform: translateY(-3px); border-color: rgba(255, 255, 255, 0.25); }
+        
+        .match-header {
+            background: rgba(15, 25, 35, 0.8); 
+            padding: 14px 22px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .match-round {
+            font-weight: bold; color: var(--val-red); text-transform: uppercase; font-size: 16px; letter-spacing: 1px;
+        }
+        .match-time {
+            font-size: 13px; color: var(--val-yellow); background: rgba(255, 215, 0, 0.1); padding: 4px 14px; border-radius: 20px; border: 1px solid var(--val-yellow);
+        }
+        .match-body {
+            padding: 30px 20px; display: flex; justify-content: space-around; align-items: center;
+        }
+        
+        /* Hiển thị Logo & Tên đội */
+        .team-box {
+            text-align: center; flex: 1; font-size: 18px; font-weight: bold; transition: all 0.3s;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .team-logo {
+            width: 70px; height: 70px; border-radius: 12px; object-fit: cover;
+            border: 2px solid var(--glass-border); background: rgba(0,0,0,0.3);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
         .team-box.winner {
-            color: #28a745;
-            text-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
-            transform: scale(1.05);
+            color: #28a745; text-shadow: 0 0 15px rgba(40, 167, 69, 0.6); transform: scale(1.05);
         }
-
+        .team-box.winner .team-logo {
+            border-color: #28a745;
+            box-shadow: 0 0 20px rgba(40, 167, 69, 0.6);
+        }
         .team-box.loser {
-            color: var(--val-gray);
-            text-decoration: line-through;
-            opacity: 0.6;
+            color: var(--val-gray); text-decoration: line-through; opacity: 0.5;
         }
-
+        .team-box.loser .team-logo {
+            filter: grayscale(100%); opacity: 0.5;
+        }
+        
         .vs-box {
-            font-size: 24px;
-            font-weight: 900;
-            color: var(--val-red);
-            padding: 0 20px;
-            text-align: center;
+            font-size: 24px; font-weight: 900; color: var(--val-red); padding: 0 20px; text-align: center;
         }
-
         .score-display {
-            font-size: 22px;
-            color: var(--val-yellow);
-            font-weight: bold;
-            margin-top: 5px;
-            background: #0f1923;
-            padding: 2px 10px;
-            border-radius: 4px;
-            border: 1px solid #334455;
+            font-size: 22px; color: var(--val-yellow); font-weight: bold; margin-top: 6px; background: rgba(15, 25, 35, 0.8); padding: 4px 12px; border-radius: 8px; border: 1px solid var(--glass-border);
         }
 
         @media (max-width: 650px) {
             .player-row { grid-template-columns: 1fr; gap: 10px; }
-            .container { padding: 20px; }
-            h1 { font-size: 24px; }
+            .container { padding: 25px 15px; border-radius: 12px; }
+            h1 { font-size: 26px; }
             .file-upload-wrapper { flex-direction: column; align-items: flex-start; }
             .logo-preview { align-self: center; width: 100px; height: 100px; }
-            .match-header { flex-direction: column; gap: 5px; text-align: center; }
-            .match-body { flex-direction: column; gap: 15px; }
+            .match-header { flex-direction: column; gap: 8px; text-align: center; }
+            .match-body { flex-direction: column; gap: 18px; }
         }
     </style>
 </head>
@@ -325,7 +359,7 @@
     <div class="subtitle">VALORANT TOURNAMENT</div>
 
     <div id="bracketSection" style="display: none;">
-        <div class="status-banner" style="border-color: #28a745; background: rgba(40, 167, 69, 0.1); color: #28a745;">
+        <div class="status-banner" style="border-color: #28a745; background: rgba(40, 167, 69, 0.15); color: #28a745; box-shadow: 0 0 25px rgba(40, 167, 69, 0.25);">
             🏆 DANH SÁCH CHIẾN ĐỘI & LỊCH THI ĐẤU CHÍNH THỨC 🏆
         </div>
         <div id="matchesDisplayContainer"></div>
@@ -341,7 +375,7 @@
             <ul>
                 <li><strong>Quy mô giải đấu:</strong> Giới hạn duy nhất đúng <strong>04 Đội tuyển</strong> đăng ký sớm nhất. Cổng đăng ký sẽ tự động khóa và ngừng nhận dữ liệu ngay khi đủ số lượng.</li>
                 <li style="color: var(--val-yellow);"><strong>Điều kiện Rank (Cực kỳ quan trọng):</strong> Giải đấu chỉ dành cho người chơi có mức Rank từ <strong>Bạch Kim (Platinum) trở xuống</strong> (Áp dụng cho cả tuyển thủ dự bị). Đội nào có thành viên vượt quá mức Rank quy định sẽ bị loại ngay từ vòng đăng ký!</li>
-                <li><strong>Thể thức thi đấu:</strong> Vòng Bán kết thi đấu BO3 (Chia cặp ngẫu nhiên). Hai đội tuyển chiến thắng sẽ bước vào Vòng Chung kết tranh ngôi vô địch bằng loạt trận BO3.</li>
+                <li><strong>Thể thức thi đấu:</strong> Toàn bộ các trận đấu từ Vòng Bán kết, Tranh Hạng 3 đến Chung Kết Tổng đều áp dụng thể thức <strong>BO3 (Best of 3)</strong>. Hai đội thua ở Bán kết sẽ đối đầu với nhau để tranh Ngôi Vị Hạng 3.</li>
                 <li><strong>Tài khoản thi đấu:</strong> Tuyển thủ bắt buộc sử dụng đúng Riot ID đã đăng ký. Nghiêm cấm gian lận (hack/cheat) hoặc sử dụng tài khoản của người khác (smurf).</li>
                 <li><strong>Thời gian & Điểm danh:</strong> Toàn đội phải có mặt tập trung tại phòng chờ Discord trước giờ thi đấu 15 phút. Quá giờ thi đấu 10 phút không lý do sẽ bị xử thua cuộc lập tức.</li>
             </ul>
@@ -395,6 +429,7 @@
                 <select id="p1_rank" required>
                     <option value="">Chọn Rank...</option>
                     <option value="Sắt (Iron)">Sắt (Iron)</option>
+                    <option value="Đồng (Bronze)">Đồng (Bronze)</option>
                     <option value="Bạc (Silver)">Bạc (Silver)</option>
                     <option value="Vàng (Gold)">Vàng (Gold)</option>
                     <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
@@ -418,6 +453,7 @@
                 <select id="p2_rank" required>
                     <option value="">Chọn Rank...</option>
                     <option value="Sắt (Iron)">Sắt (Iron)</option>
+                    <option value="Đồng (Bronze)">Đồng (Bronze)</option>
                     <option value="Bạc (Silver)">Bạc (Silver)</option>
                     <option value="Vàng (Gold)">Vàng (Gold)</option>
                     <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
@@ -441,6 +477,7 @@
                 <select id="p3_rank" required>
                     <option value="">Chọn Rank...</option>
                     <option value="Sắt (Iron)">Sắt (Iron)</option>
+                    <option value="Đồng (Bronze)">Đồng (Bronze)</option>
                     <option value="Bạc (Silver)">Bạc (Silver)</option>
                     <option value="Vàng (Gold)">Vàng (Gold)</option>
                     <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
@@ -464,6 +501,7 @@
                 <select id="p4_rank" required>
                     <option value="">Chọn Rank...</option>
                     <option value="Sắt (Iron)">Sắt (Iron)</option>
+                    <option value="Đồng (Bronze)">Đồng (Bronze)</option>
                     <option value="Bạc (Silver)">Bạc (Silver)</option>
                     <option value="Vàng (Gold)">Vàng (Gold)</option>
                     <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
@@ -487,6 +525,7 @@
                 <select id="p5_rank" required>
                     <option value="">Chọn Rank...</option>
                     <option value="Sắt (Iron)">Sắt (Iron)</option>
+                    <option value="Đồng (Bronze)">Đồng (Bronze)</option>
                     <option value="Bạc (Silver)">Bạc (Silver)</option>
                     <option value="Vàng (Gold)">Vàng (Gold)</option>
                     <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
@@ -510,6 +549,7 @@
                 <select id="p6_rank">
                     <option value="">Chọn Rank...</option>
                     <option value="Sắt (Iron)">Sắt (Iron)</option>
+                    <option value="Đồng (Bronze)">Đồng (Bronze)</option>
                     <option value="Bạc (Silver)">Bạc (Silver)</option>
                     <option value="Vàng (Gold)">Vàng (Gold)</option>
                     <option value="Bạch Kim (Platinum)">Bạch Kim (Platinum)</option>
@@ -588,12 +628,13 @@
         }
     }
 
-    // 2. HÀM TẢI VÀ VẼ BẢNG THI ĐẤU (HIỂN THỊ KHI QTV CÔNG BỐ)
+    // 2. HÀM TẢI VÀ VẼ BẢNG THI ĐẤU (CÓ HIỂN THỊ LOGO ĐỘI)
     async function loadTournamentBracket() {
-        const { data: matches, error } = await supabaseClient
-            .from('matches')
-            .select('*')
-            .order('id');
+        // Tải cả danh sách trận đấu và danh sách đội đăng ký để lấy Logo
+        const [{ data: matches, error }, { data: teams }] = await Promise.all([
+            supabaseClient.from('matches').select('*'),
+            supabaseClient.from('registrations').select('team_name, logo_url')
+        ]);
 
         const container = document.getElementById('matchesDisplayContainer');
         container.innerHTML = '';
@@ -603,9 +644,26 @@
             return;
         }
 
+        // Tạo map từ Tên Đội -> Logo URL để dò tìm cho nhanh
+        const logoMap = {};
+        if (teams) {
+            teams.forEach(t => {
+                logoMap[t.team_name] = t.logo_url || 'https://via.placeholder.com/70/151c24/ff4655?text=VAL';
+            });
+        }
+
+        // Sắp xếp thứ tự trận: Bán kết 1 -> Bán kết 2 -> Tranh Hạng 3 -> Chung kết
+        const orderMap = { 'bk1': 1, 'bk2': 2, 'th3': 3, 'ck': 4 };
+        matches.sort((a, b) => (orderMap[a.id] || 99) - (orderMap[b.id] || 99));
+
         matches.forEach(m => {
             const t1 = m.team1_name || 'Đang chờ đối thủ...';
             const t2 = m.team2_name || 'Đang chờ đối thủ...';
+            
+            // Lấy logo, nếu chưa chọn đội thì để ảnh mặc định
+            const l1 = m.team1_name && logoMap[m.team1_name] ? logoMap[m.team1_name] : 'https://via.placeholder.com/70/151c24/768079?text=?';
+            const l2 = m.team2_name && logoMap[m.team2_name] ? logoMap[m.team2_name] : 'https://via.placeholder.com/70/151c24/768079?text=?';
+            
             const time = m.match_time ? `⏰ ${m.match_time}` : '⏰ Thời gian: Chưa có thông báo chính thức';
             
             let t1Class = 'team-box';
@@ -623,12 +681,18 @@
                         <span class="match-time">${time}</span>
                     </div>
                     <div class="match-body">
-                        <div class="${t1Class}">${t1} ${m.winner === t1 ? '👑' : ''}</div>
+                        <div class="${t1Class}">
+                            <img class="team-logo" src="${l1}" alt="Logo ${t1}">
+                            <span>${t1} ${m.winner === t1 ? '👑' : ''}</span>
+                        </div>
                         <div class="vs-box">
                             VS
                             <div class="score-display">${m.score || '-'}</div>
                         </div>
-                        <div class="${t2Class}">${t2} ${m.winner === t2 ? '👑' : ''}</div>
+                        <div class="${t2Class}">
+                            <img class="team-logo" src="${l2}" alt="Logo ${t2}">
+                            <span>${t2} ${m.winner === t2 ? '👑' : ''}</span>
+                        </div>
                     </div>
                 </div>
             `;
