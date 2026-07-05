@@ -280,6 +280,65 @@
             box-shadow: 0 0 15px rgba(255, 70, 85, 0.15);
         }
 
+        /* ========================================================
+           STYLE CHO DANH SÁCH CHIẾN ĐỘI ĐÃ ĐĂNG KÝ (TÍNH NĂNG MỚI)
+           ======================================================== */
+        .team-display-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-left: 5px solid var(--val-red);
+            border-radius: 16px;
+            padding: 22px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            transition: transform 0.3s;
+        }
+        .team-display-card:hover { transform: translateY(-3px); border-color: rgba(255, 255, 255, 0.3); }
+        
+        .team-display-header {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+        .team-display-logo {
+            width: 65px;
+            height: 65px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 2px solid var(--val-red);
+            background: #151c24;
+            box-shadow: 0 0 15px rgba(255, 70, 85, 0.3);
+        }
+        .team-display-name { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: 1px; }
+        .team-display-tag {
+            background: var(--val-red); color: #fff; font-size: 12px; padding: 3px 10px;
+            border-radius: 6px; font-weight: bold; margin-left: 10px; vertical-align: middle;
+        }
+        .team-display-contact { font-size: 13px; color: var(--val-yellow); margin-top: 4px; }
+        
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 10px;
+        }
+        .player-badge {
+            background: rgba(15, 25, 35, 0.6);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+        }
+        .player-badge.captain { border-color: var(--val-yellow); background: rgba(255, 215, 0, 0.05); }
+        .player-badge.sub { border-style: dashed; border-color: var(--val-gray); opacity: 0.85; }
+        .player-id { font-weight: bold; color: #fff; font-size: 14px; margin-bottom: 2px; }
+        .player-meta { color: var(--val-gray); font-size: 12px; }
+
         /* STYLE BẢNG THI ĐẤU (BRACKET VIEW) GLASS CÓ LOGO */
         .match-card {
             background: var(--glass-bg);
@@ -349,6 +408,8 @@
             .logo-preview { align-self: center; width: 100px; height: 100px; }
             .match-header { flex-direction: column; gap: 8px; text-align: center; }
             .match-body { flex-direction: column; gap: 18px; }
+            .team-display-header { flex-direction: column; text-align: center; }
+            .team-display-tag { margin-left: 0; display: inline-block; margin-top: 5px; }
         }
     </style>
 </head>
@@ -370,7 +431,16 @@
             Đang kiểm tra dữ liệu từ hệ thống...
         </div>
 
-        <div class="rules-box">
+        <div id="registeredTeamsListSection" style="margin-bottom: 35px;">
+            <div class="section-title" style="margin-top: 0; border-color: var(--val-yellow); background: linear-gradient(90deg, rgba(255, 215, 0, 0.15), transparent);">
+                👥 Danh Sách Chiến Đội Đã Ghi Danh (<span id="teamCountDisplay">0/4</span>)
+            </div>
+            <div id="registeredTeamsContainer">
+                <p style="text-align:center; color:var(--val-gray); padding: 20px;">Đang tải danh sách chiến đội...</p>
+            </div>
+        </div>
+
+        <div id="rulesBox" class="rules-box">
             <h3>Thể lệ & Quy định giải đấu</h3>
             <ul>
                 <li><strong>Quy mô giải đấu:</strong> Giới hạn duy nhất đúng <strong>04 Đội tuyển</strong> đăng ký sớm nhất. Cổng đăng ký sẽ tự động khóa và ngừng nhận dữ liệu ngay khi đủ số lượng.</li>
@@ -579,7 +649,7 @@
 
 <script>
     // ==========================================
-    // CẤU HÌNH SUPABASE (Đã dùng tên biến supabaseClient)
+    // CẤU HÌNH SUPABASE
     // ==========================================
     const SUPABASE_URL = 'https://qxrovptliyozkiktcvst.supabase.co'; 
     const SUPABASE_ANON_KEY = 'sb_publishable_0YYA8-eml_uTO6McECoBiQ_xW_mE8My'; 
@@ -603,7 +673,6 @@
         }
 
         try {
-            // Kiểm tra xem QTV đã công bố lịch đấu chưa
             const { data: setting } = await supabaseClient
                 .from('settings')
                 .select('*')
@@ -616,21 +685,95 @@
                 document.getElementById('bracketSection').style.display = 'block';
                 await loadTournamentBracket();
             } else {
-                // CHẾ ĐỘ 2: FORM ĐĂNG KÝ (MẶC ĐỊNH)
+                // CHẾ ĐỘ 2: FORM ĐĂNG KÝ VÀ DANH SÁCH CHIẾN ĐỘI (MẶC ĐỊNH)
                 document.getElementById('registrationSection').style.display = 'block';
                 document.getElementById('bracketSection').style.display = 'none';
                 await checkRegistrationStatus();
             }
         } catch (error) {
-            // Nếu lỗi đọc bảng settings (chưa tạo bảng) -> Vẫn hiển thị Form đăng ký bình thường
-            console.warn('Chưa có cấu hình Admin, mặc định hiện Form đăng ký.', error);
+            console.warn('Chưa có cấu hình Admin, mặc định hiện trang Đăng ký.', error);
             await checkRegistrationStatus();
         }
     }
 
-    // 2. HÀM TẢI VÀ VẼ BẢNG THI ĐẤU (CÓ HIỂN THỊ LOGO ĐỘI)
+    // 2. HÀM TẢI VÀ HIỂN THỊ DANH SÁCH CHIẾN ĐỘI + THÀNH VIÊN (TÍNH NĂNG MỚI)
+    async function loadRegisteredTeams() {
+        const { data: teams, error } = await supabaseClient
+            .from('registrations')
+            .select('*')
+            .order('created_at', { ascending: true });
+
+        const container = document.getElementById('registeredTeamsContainer');
+        const countDisplay = document.getElementById('teamCountDisplay');
+        container.innerHTML = '';
+
+        if (error || !teams || teams.length === 0) {
+            countDisplay.innerText = `0/${MAX_TEAMS}`;
+            container.innerHTML = '<p style="text-align:center; color:var(--val-gray); padding: 25px; background: rgba(0,0,0,0.2); border-radius: 12px;">Chưa có chiến đội nào ghi danh. Hãy là đội tuyển đầu tiên bước vào đấu trường!</p>';
+            return;
+        }
+
+        countDisplay.innerText = `${teams.length}/${MAX_TEAMS}`;
+
+        teams.forEach((t, idx) => {
+            const logo = t.logo_url || 'https://via.placeholder.com/65/151c24/ff4655?text=VAL';
+            
+            // Xây dựng danh sách tuyển thủ
+            let playersHtml = `
+                <div class="player-badge captain">
+                    <span class="player-id">👑 ${t.p1_id}</span>
+                    <span class="player-meta">${t.p1_rank} • <strong>${t.p1_role}</strong> (Đội Trưởng)</span>
+                </div>
+                <div class="player-badge">
+                    <span class="player-id">⚔️ ${t.p2_id}</span>
+                    <span class="player-meta">${t.p2_rank} • <strong>${t.p2_role}</strong></span>
+                </div>
+                <div class="player-badge">
+                    <span class="player-id">⚔️ ${t.p3_id}</span>
+                    <span class="player-meta">${t.p3_rank} • <strong>${t.p3_role}</strong></span>
+                </div>
+                <div class="player-badge">
+                    <span class="player-id">⚔️ ${t.p4_id}</span>
+                    <span class="player-meta">${t.p4_role ? t.p4_rank + ' • <strong>' + t.p4_role + '</strong>' : t.p4_rank}</span>
+                </div>
+                <div class="player-badge">
+                    <span class="player-id">⚔️ ${t.p5_id}</span>
+                    <span class="player-meta">${t.p5_role ? t.p5_rank + ' • <strong>' + t.p5_role + '</strong>' : t.p5_rank}</span>
+                </div>
+            `;
+
+            // Nếu có tuyển thủ dự bị thứ 6 thì mới vẽ thêm
+            if (t.p6_id && t.p6_id.trim() !== '') {
+                playersHtml += `
+                    <div class="player-badge sub">
+                        <span class="player-id">🛡️ ${t.p6_id}</span>
+                        <span class="player-meta">${t.p6_rank || 'N/A'} • <strong>${t.p6_role || 'Flex'}</strong> (Dự Bị)</span>
+                    </div>
+                `;
+            }
+
+            container.innerHTML += `
+                <div class="team-display-card">
+                    <div class="team-display-header">
+                        <img class="team-display-logo" src="${logo}" alt="Logo">
+                        <div>
+                            <div>
+                                <span class="team-display-name">#${idx + 1}. ${t.team_name}</span>
+                                <span class="team-display-tag">${t.team_tag}</span>
+                            </div>
+                            <div class="team-display-contact">Đại diện: <strong>${t.leader_name}</strong> | Discord: ${t.leader_discord}</div>
+                        </div>
+                    </div>
+                    <div class="players-grid">
+                        ${playersHtml}
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    // 3. HÀM TẢI VÀ VẼ BẢNG THI ĐẤU (HIỂN THỊ KHI QTV CÔNG BỐ)
     async function loadTournamentBracket() {
-        // Tải cả danh sách trận đấu và danh sách đội đăng ký để lấy Logo
         const [{ data: matches, error }, { data: teams }] = await Promise.all([
             supabaseClient.from('matches').select('*'),
             supabaseClient.from('registrations').select('team_name, logo_url')
@@ -644,7 +787,6 @@
             return;
         }
 
-        // Tạo map từ Tên Đội -> Logo URL để dò tìm cho nhanh
         const logoMap = {};
         if (teams) {
             teams.forEach(t => {
@@ -652,23 +794,17 @@
             });
         }
 
-        // Sắp xếp thứ tự trận: Bán kết 1 -> Bán kết 2 -> Tranh Hạng 3 -> Chung kết
         const orderMap = { 'bk1': 1, 'bk2': 2, 'th3': 3, 'ck': 4 };
         matches.sort((a, b) => (orderMap[a.id] || 99) - (orderMap[b.id] || 99));
 
         matches.forEach(m => {
             const t1 = m.team1_name || 'Đang chờ đối thủ...';
             const t2 = m.team2_name || 'Đang chờ đối thủ...';
-            
-            // Lấy logo, nếu chưa chọn đội thì để ảnh mặc định
             const l1 = m.team1_name && logoMap[m.team1_name] ? logoMap[m.team1_name] : 'https://via.placeholder.com/70/151c24/768079?text=?';
             const l2 = m.team2_name && logoMap[m.team2_name] ? logoMap[m.team2_name] : 'https://via.placeholder.com/70/151c24/768079?text=?';
-            
             const time = m.match_time ? `⏰ ${m.match_time}` : '⏰ Thời gian: Chưa có thông báo chính thức';
             
-            let t1Class = 'team-box';
-            let t2Class = 'team-box';
-            
+            let t1Class = 'team-box'; let t2Class = 'team-box';
             if (m.winner) {
                 if (m.winner === t1) { t1Class += ' winner'; t2Class += ' loser'; }
                 else if (m.winner === t2) { t2Class += ' winner'; t1Class += ' loser'; }
@@ -676,30 +812,18 @@
 
             container.innerHTML += `
                 <div class="match-card">
-                    <div class="match-header">
-                        <span class="match-round">${m.round_name}</span>
-                        <span class="match-time">${time}</span>
-                    </div>
+                    <div class="match-header"><span class="match-round">${m.round_name}</span><span class="match-time">${time}</span></div>
                     <div class="match-body">
-                        <div class="${t1Class}">
-                            <img class="team-logo" src="${l1}" alt="Logo ${t1}">
-                            <span>${t1} ${m.winner === t1 ? '👑' : ''}</span>
-                        </div>
-                        <div class="vs-box">
-                            VS
-                            <div class="score-display">${m.score || '-'}</div>
-                        </div>
-                        <div class="${t2Class}">
-                            <img class="team-logo" src="${l2}" alt="Logo ${t2}">
-                            <span>${t2} ${m.winner === t2 ? '👑' : ''}</span>
-                        </div>
+                        <div class="${t1Class}"><img class="team-logo" src="${l1}" alt="Logo ${t1}"><span>${t1} ${m.winner === t1 ? '👑' : ''}</span></div>
+                        <div class="vs-box">VS<div class="score-display">${m.score || '-'}</div></div>
+                        <div class="${t2Class}"><img class="team-logo" src="${l2}" alt="Logo ${t2}"><span>${t2} ${m.winner === t2 ? '👑' : ''}</span></div>
                     </div>
                 </div>
             `;
         });
     }
 
-    // 3. XỬ LÝ PREVIEW LOGO KHI CHỌN FILE
+    // 4. XỬ LÝ PREVIEW LOGO KHI CHỌN FILE
     document.getElementById('teamLogo').addEventListener('change', function(e) {
         const file = e.target.files[0];
         const previewImg = document.getElementById('previewImg');
@@ -708,31 +832,29 @@
         if (file) {
             if (file.size > 2 * 1024 * 1024) {
                 alert('⚠️ Dung lượng ảnh vượt quá 2MB! Vui lòng chọn ảnh nhẹ hơn.');
-                this.value = '';
-                return;
+                this.value = ''; return;
             }
-
             previewImg.src = URL.createObjectURL(file);
-            previewImg.style.display = 'block';
-            previewText.style.display = 'none';
+            previewImg.style.display = 'block'; previewText.style.display = 'none';
         } else {
-            previewImg.src = '';
-            previewImg.style.display = 'none';
-            previewText.style.display = 'block';
+            previewImg.src = ''; previewImg.style.display = 'none'; previewText.style.display = 'block';
         }
     });
 
-    // 4. HÀM KIỂM TRA SỐ LƯỢNG ĐỘI
+    // 5. HÀM KIỂM TRA SỐ LƯỢNG ĐỘI & KHÓA FORM NẾU ĐỦ 4 ĐỘI
     async function checkRegistrationStatus() {
         const banner = document.getElementById('statusBanner');
-        const submitBtn = document.getElementById('submitBtn');
-        const allInputs = document.querySelectorAll('#regForm input, #regForm select');
+        const form = document.getElementById('regForm');
+        const rulesBox = document.getElementById('rulesBox');
 
         if (!supabaseClient) {
             banner.className = 'status-banner warning';
             banner.innerHTML = '⚠️ CHƯA KẾT NỐI DATABASE: Vui lòng kiểm tra cấu hình Supabase!';
             return true;
         }
+
+        // Luôn làm mới danh sách đội trước tiên
+        await loadRegisteredTeams();
 
         try {
             const { count, error } = await supabaseClient
@@ -742,16 +864,20 @@
             if (error) throw error;
 
             if (count >= MAX_TEAMS) {
+                // CHẾ ĐỘ KHÓA: ĐÃ ĐỦ 4 ĐỘI -> ẨN TOÀN BỘ THỂ LỆ & FORM ĐĂNG KÝ
                 banner.className = 'status-banner locked';
-                banner.innerHTML = `🔒 CỔNG ĐĂNG KÝ ĐÃ KHÓA (ĐÃ ĐỦ ${MAX_TEAMS}/${MAX_TEAMS} ĐỘI)`;
+                banner.innerHTML = `🔒 CỔNG ĐĂNG KÝ ĐÃ KHÓA (ĐÃ ĐỦ ${MAX_TEAMS}/${MAX_TEAMS} CHIẾN ĐỘI GHI DANH)`;
                 
-                allInputs.forEach(element => element.disabled = true);
-                submitBtn.disabled = true;
-                submitBtn.innerText = 'Cổng Đăng Ký Đã Khóa';
+                if (form) form.style.display = 'none';
+                if (rulesBox) rulesBox.style.display = 'none';
                 return false;
             } else {
+                // CHẾ ĐỘ MỞ: CÒN SUẤT TRỐNG -> HIỆN THỂ LỆ & FORM ĐĂNG KÝ BÌNH THƯỜNG
                 banner.className = 'status-banner';
-                banner.innerHTML = `🔥 Đã đăng ký: <span>${count}/${MAX_TEAMS}</span> Đội (Còn trống ${MAX_TEAMS - count} suất cuối)`;
+                banner.innerHTML = `🔥 Đã ghi danh: <span>${count}/${MAX_TEAMS}</span> Chiến Đội (Còn trống ${MAX_TEAMS - count} suất cuối)`;
+                
+                if (form) form.style.display = 'block';
+                if (rulesBox) rulesBox.style.display = 'block';
                 return true;
             }
         } catch (error) {
@@ -762,43 +888,34 @@
         }
     }
 
-    // 5. HÀM KIỂM TRA RANK HỢP LỆ (TỪ PLAT TRỞ XUỐNG)
+    // 6. HÀM KIỂM TRA RANK HỢP LỆ (TỪ PLAT TRỞ XUỐNG)
     function validatePlayerRanks() {
         const invalidRanks = ['Kim Cương (Diamond)', 'Cao Thủ (Ascendant)', 'Bất Tử - Radiant'];
-        
         for (let i = 1; i <= 6; i++) {
             const rankSelect = document.getElementById(`p${i}_rank`);
             const playerIdInput = document.getElementById(`p${i}_id`);
-            
             if (rankSelect && rankSelect.value) {
                 if (invalidRanks.includes(rankSelect.value)) {
                     const playerName = playerIdInput.value || `Tuyển thủ ${i}`;
                     alert(`❌ ĐỘI KHÔNG ĐỦ ĐIỀU KIỆN DỰ THI!\n\nPhát hiện ${playerName} (Tuyển thủ ${i}) có mức rank "${rankSelect.value}" vượt quá giới hạn Bạch Kim (Platinum) trở xuống.\n\nVui lòng điều chỉnh lại đội hình thi đấu hợp lệ!`);
-                    rankSelect.focus();
-                    return false;
+                    rankSelect.focus(); return false;
                 }
             }
         }
         return true;
     }
 
-    // 6. XỬ LÝ KHI GỬI FORM ĐĂNG KÝ
+    // 7. XỬ LÝ KHI GỬI FORM ĐĂNG KÝ
     document.getElementById('regForm').addEventListener('submit', async function(e) {
         e.preventDefault(); 
-        
-        // Kiểm tra điều kiện Rank trước tiên
-        if (!validatePlayerRanks()) {
-            return;
-        }
+        if (!validatePlayerRanks()) return;
 
         if (!supabaseClient) {
-            alert('❌ Bạn chưa cấu hình đường link Supabase trong trang web. Vui lòng kiểm tra lại!');
-            return;
+            alert('❌ Bạn chưa cấu hình đường link Supabase trong trang web!'); return;
         }
 
         const submitBtn = document.getElementById('submitBtn');
-        submitBtn.disabled = true;
-        submitBtn.innerText = 'Đang kiểm tra suất trống...';
+        submitBtn.disabled = true; submitBtn.innerText = 'Đang kiểm tra suất trống...';
 
         try {
             const isStillOpen = await checkRegistrationStatus();
@@ -807,7 +924,6 @@
                 return;
             }
 
-            // Upload Logo lên Supabase Storage
             submitBtn.innerText = 'Đang tải Logo lên hệ thống...';
             const fileInput = document.getElementById('teamLogo');
             const file = fileInput.files[0];
@@ -819,79 +935,51 @@
                 const fileName = `${Date.now()}_${teamTagClean}.${fileExt}`;
                 const filePath = `logos/${fileName}`;
 
-                const { error: uploadError } = await supabaseClient
-                    .storage
-                    .from('team-logos')
-                    .upload(filePath, file);
-
+                const { error: uploadError } = await supabaseClient.storage.from('team-logos').upload(filePath, file);
                 if (uploadError) {
                     if (uploadError.message.includes('not found') || uploadError.message.includes('policy')) {
-                        throw new Error('Chưa tạo Bucket lưu trữ hoặc lỗi quyền RLS Storage! Hãy chạy lệnh SQL cấu hình Storage.');
+                        throw new Error('Chưa tạo Bucket lưu trữ hoặc lỗi quyền RLS Storage!');
                     }
                     throw uploadError;
                 }
 
-                const { data: urlData } = supabaseClient
-                    .storage
-                    .from('team-logos')
-                    .getPublicUrl(filePath);
-
+                const { data: urlData } = supabaseClient.storage.from('team-logos').getPublicUrl(filePath);
                 logoPublicUrl = urlData.publicUrl;
             }
 
-            // Ghi dữ liệu vào Database
             submitBtn.innerText = 'Đang ghi nhận danh sách tuyển thủ...';
-
             const registrationData = {
-                team_name: document.getElementById('teamName').value,
-                team_tag: document.getElementById('teamTag').value,
-                logo_url: logoPublicUrl,
-                leader_name: document.getElementById('leaderName').value,
-                leader_discord: document.getElementById('leaderDiscord').value,
-                leader_phone: document.getElementById('leaderPhone').value,
-                
+                team_name: document.getElementById('teamName').value, team_tag: document.getElementById('teamTag').value, logo_url: logoPublicUrl,
+                leader_name: document.getElementById('leaderName').value, leader_discord: document.getElementById('leaderDiscord').value, leader_phone: document.getElementById('leaderPhone').value,
                 p1_id: document.getElementById('p1_id').value, p1_rank: document.getElementById('p1_rank').value, p1_role: document.getElementById('p1_role').value,
                 p2_id: document.getElementById('p2_id').value, p2_rank: document.getElementById('p2_rank').value, p2_role: document.getElementById('p2_role').value,
                 p3_id: document.getElementById('p3_id').value, p3_rank: document.getElementById('p3_rank').value, p3_role: document.getElementById('p3_role').value,
                 p4_id: document.getElementById('p4_id').value, p4_rank: document.getElementById('p4_rank').value, p4_role: document.getElementById('p4_role').value,
                 p5_id: document.getElementById('p5_id').value, p5_rank: document.getElementById('p5_rank').value, p5_role: document.getElementById('p5_role').value,
-                
-                p6_id: document.getElementById('p6_id').value || null, 
-                p6_rank: document.getElementById('p6_rank').value || null, 
-                p6_role: document.getElementById('p6_role').value || null
+                p6_id: document.getElementById('p6_id').value || null, p6_rank: document.getElementById('p6_rank').value || null, p6_role: document.getElementById('p6_role').value || null
             };
 
-            const { error: dbError } = await supabaseClient
-                .from('registrations')
-                .insert([registrationData]);
-
+            const { error: dbError } = await supabaseClient.from('registrations').insert([registrationData]);
             if (dbError) throw dbError;
 
-            alert(`🎉 Chúc mừng! Đội tuyển "${registrationData.team_name}" đã hoàn tất đăng ký và tải logo lên thành công!`);
-            
+            alert(`🎉 Chúc mừng! Chiến đội "${registrationData.team_name}" đã hoàn tất đăng ký!`);
             document.getElementById('regForm').reset();
             document.getElementById('previewImg').style.display = 'none';
             document.getElementById('previewText').style.display = 'block';
             
+            // Làm mới lại toàn bộ trang: Sẽ tự vẽ thẻ đội mới và ẩn Form nếu là đội thứ 4
             await checkRegistrationStatus();
             
         } catch (error) {
             console.error('Lỗi chi tiết từ hệ thống:', error);
-            
-            if (error.code === '23505') {
-                alert('❌ Tên Đội tuyển này đã có người đăng ký trước đó rồi! Vui lòng chọn một tên đội khác.');
-            } else if (error.code === '42703') {
-                alert('❌ Lỗi Database: Chưa thêm cột "logo_url" vào bảng registrations!');
-            } else {
-                alert('❌ Gửi đăng ký thất bại! Lỗi: ' + (error.message || 'Vui lòng kiểm tra lại hệ thống.'));
-            }
+            if (error.code === '23505') alert('❌ Tên Đội tuyển này đã có người đăng ký trước đó rồi!');
+            else alert('❌ Gửi đăng ký thất bại! Lỗi: ' + (error.message || 'Vui lòng kiểm tra lại hệ thống.'));
         } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerText = 'Gửi Đăng Ký Ngay';
+            submitBtn.disabled = false; submitBtn.innerText = 'Gửi Đăng Ký Ngay';
         }
     });
 
-    // Bắt đầu khởi tạo giao diện khi web vừa tải
+    // Khởi tạo trang
     window.addEventListener('DOMContentLoaded', initPage);
 </script>
 
