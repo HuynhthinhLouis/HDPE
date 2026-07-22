@@ -2,20 +2,30 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QTV - HDPE Premier League</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --val-red: #ff4655; --val-dark: #0f1923; --val-card: #1f2d3d; --val-text: #ece8e1; --val-gray: #768079; --val-yellow: #ffd700; }
+        :root { 
+            --val-red: #ff4655; 
+            --val-dark: #0f1923; 
+            --val-card: #1f2d3d; 
+            --val-text: #ece8e1; 
+            --val-gray: #768079; 
+            --val-yellow: #ffd700; 
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
         body { background: var(--val-dark); color: var(--val-text); padding: 20px; }
         .container { max-width: 1000px; margin: 20px auto; background: var(--val-card); padding: 30px; border-top: 5px solid var(--val-red); }
         h1, h2 { color: var(--val-text); text-transform: uppercase; margin-bottom: 20px; }
         .section { margin-bottom: 40px; background: rgba(0,0,0,0.3); padding: 20px; border: 1px solid var(--val-gray); }
         input, select, button { padding: 10px; margin: 5px 0; background: var(--val-dark); border: 1px solid #334455; color: white; width: 100%; }
-        button { background: var(--val-red); font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        button { background: var(--val-red); font-weight: bold; cursor: pointer; text-transform: uppercase; border: none; }
         button:hover { background: #e03e4d; }
         button.btn-green { background: #28a745; }
+        button.btn-green:hover { background: #218838; }
         button.btn-yellow { background: var(--val-yellow); color: black; }
+        button.btn-yellow:hover { background: #e0a800; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid #334455; padding: 10px; text-align: left; font-size: 14px; }
         th { background: #151c24; color: var(--val-red); }
@@ -78,7 +88,7 @@
 
             <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px;">
                 <h3 style="margin-bottom: 10px; color: white;">Điều khiển màn hình OBS Map</h3>
-                <label style="color: var(--val-gray);">Danh sách 12 Map (Cách nhau bằng dấu phẩy):</label>
+                <label style="color: var(--val-gray);">Danh sách Map (Cách nhau bằng dấu phẩy):</label>
                 <input type="text" id="mapPoolInput" placeholder="Bind, Haven, Split, Ascent, Icebox, Breeze, Fracture, Pearl, Lotus, Sunset, Abyss, MỚI">
                 <div class="grid-2" style="margin-top: 10px;">
                     <input type="text" id="obsTeam1" placeholder="Tên Đội 1 (Trên màn hình Map)">
@@ -101,10 +111,16 @@
 
     let registeredTeamsList = [];
 
+    // 1. ĐĂNG NHẬP
     async function loginAdmin() {
-        const u = document.getElementById('adminUser').value;
-        const p = document.getElementById('adminPass').value;
-        // Đã thay .single() thành .maybeSingle() để chặn lỗi 406 khi sai thông tin
+        const u = document.getElementById('adminUser').value.trim();
+        const p = document.getElementById('adminPass').value.trim();
+
+        if (!u || !p) {
+            alert("Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
+            return;
+        }
+
         const { data, error } = await supabaseClient.from('admins').select('*').eq('username', u).eq('password', p).maybeSingle();
         
         if (error) {
@@ -120,13 +136,17 @@
             await loadTeams();
             await loadSettings();
             await loadMatches();
+            await loadMapSettings(); // Tải cài đặt Map hiện tại
         } else { 
             alert('❌ Sai tài khoản hoặc mật khẩu!'); 
         }
     }
 
+    // 2. CÔNG BỐ TRANG CHỦ
     async function loadSettings() {
-        const { data } = await supabaseClient.from('settings').select('*').eq('id', 'global').maybeSingle();
+        const { data, error } = await supabaseClient.from('settings').select('*').eq('id', 'global').maybeSingle();
+        if (error) console.error("Lỗi loadSettings:", error);
+
         const text = document.getElementById('publishStatusText');
         if (data && data.is_bracket_published) {
             text.innerHTML = '🟢 Trang chủ đang hiển thị: <span style="color:#28a745">BẢNG THI ĐẤU & KẾT QUẢ</span>';
@@ -136,23 +156,35 @@
     }
 
     async function togglePublish(status) {
-        await supabaseClient.from('settings').update({ is_bracket_published: status }).eq('id', 'global');
-        alert(status ? '🚀 Đã công bố Bảng đấu lên Trang chủ!' : '🔄 Đã chuyển Trang chủ về Form Đăng ký!');
-        loadSettings();
+        const { error } = await supabaseClient.from('settings').upsert({ id: 'global', is_bracket_published: status });
+        if (error) {
+            alert('Lỗi: ' + error.message);
+        } else {
+            alert(status ? '🚀 Đã công bố Bảng đấu lên Trang chủ!' : '🔄 Đã chuyển Trang chủ về Form Đăng ký!');
+            loadSettings();
+        }
     }
 
+    // 3. QUẢN LÝ ĐỘI
     async function loadTeams() {
-        const { data } = await supabaseClient.from('registrations').select('*');
+        const { data, error } = await supabaseClient.from('registrations').select('*');
+        if (error) {
+            console.error("Lỗi loadTeams:", error);
+            return;
+        }
         registeredTeamsList = data || [];
         const tbody = document.querySelector('#teamsTable tbody');
         tbody.innerHTML = '';
         registeredTeamsList.forEach(t => {
-            tbody.innerHTML += `<tr><td><strong>${t.team_name}</strong></td><td>${t.team_tag}</td><td>${t.leader_name}</td><td>${t.leader_phone}</td><td>${t.leader_discord}</td></tr>`;
+            tbody.innerHTML += `<tr><td><strong>${t.team_name}</strong></td><td>${t.team_tag || ''}</td><td>${t.leader_name || ''}</td><td>${t.leader_phone || ''}</td><td>${t.leader_discord || ''}</td></tr>`;
         });
     }
 
+    // 4. QUẢN LÝ LỊCH THI ĐẤU
     async function loadMatches() {
-        const { data: matches } = await supabaseClient.from('matches').select('*');
+        const { data: matches, error } = await supabaseClient.from('matches').select('*');
+        if (error) console.error("Lỗi loadMatches:", error);
+
         const orderMap = { 'bk1': 1, 'bk2': 2, 'th3': 3, 'ck': 4 };
         if (matches) {
             matches.sort((a, b) => (orderMap[a.id] || 99) - (orderMap[b.id] || 99));
@@ -169,7 +201,7 @@
         matches.forEach(m => {
             container.innerHTML += `
                 <div class="match-box" id="match_${m.id}">
-                    <h3 style="color: var(--val-red); margin-bottom: 10px;">${m.round_name}</h3>
+                    <h3 style="color: var(--val-red); margin-bottom: 10px;">${m.round_name || m.id.toUpperCase()}</h3>
                     <div class="grid-2">
                         <div><label>Đội 1:</label><select class="t1">${teamOptions}</select></div>
                         <div><label>Đội 2:</label><select class="t2">${teamOptions}</select></div>
@@ -196,18 +228,21 @@
             const box = document.getElementById(`match_${id}`);
             if (!box) continue;
             const updateData = {
+                id: id,
                 team1_name: box.querySelector('.t1').value || null,
                 team2_name: box.querySelector('.t2').value || null,
                 match_time: box.querySelector('.time').value.trim() || null,
                 score: box.querySelector('.score').value.trim() || null,
                 winner: box.querySelector('.win').value || null
             };
-            await supabaseClient.from('matches').update(updateData).eq('id', id);
+            const { error } = await supabaseClient.from('matches').upsert(updateData);
+            if (error) console.error(`Lỗi khi lưu trận ${id}:`, error);
         }
         alert('💾 Đã lưu thành công toàn bộ lịch đấu và kết quả!');
         loadMatches();
     }
 
+    // 5. QUẢN LÝ ĐỘI TRƯỞNG & MAP DRAFT
     async function createCaptain() {
         const u = document.getElementById('capUser').value.trim();
         const p = document.getElementById('capPass').value.trim();
@@ -217,32 +252,66 @@
         const { error } = await supabaseClient.from('captain_accounts').insert([{ username: u, password: p, team_name: t }]);
         if(error) alert('Lỗi: ' + error.message);
         else { 
-            alert('Đã tạo tài khoản cho đội ' + t); 
+            alert('✅ Đã tạo tài khoản cho đội ' + t); 
             document.getElementById('capUser').value = ''; 
             document.getElementById('capPass').value = ''; 
             document.getElementById('capTeam').value = '';
         }
     }
 
+    // Tải cấu hình Map hiện tại lên Form Admin
+    async function loadMapSettings() {
+        const { data, error } = await supabaseClient.from('map_draft').select('*').eq('id', 1).maybeSingle();
+        if (error) {
+            console.error("Lỗi loadMapSettings:", error);
+            return;
+        }
+        if (data) {
+            if (data.maps_pool) document.getElementById('mapPoolInput').value = data.maps_pool;
+            if (data.team1_name) document.getElementById('obsTeam1').value = data.team1_name;
+            if (data.team2_name) document.getElementById('obsTeam2').value = data.team2_name;
+        }
+    }
+
+    // Cập nhật Cài Đặt Map (Dùng .upsert để tự thêm row id=1 nếu chưa có)
     async function updateMapSettings() {
-        const pool = document.getElementById('mapPoolInput').value;
+        const pool = document.getElementById('mapPoolInput').value.trim();
         const t1 = document.getElementById('obsTeam1').value.trim();
         const t2 = document.getElementById('obsTeam2').value.trim();
         
-        const { error } = await supabaseClient.from('map_draft').update({ 
-            maps_pool: pool, team1_name: t1, team2_name: t2 
-        }).eq('id', 1);
+        const { error } = await supabaseClient.from('map_draft').upsert({ 
+            id: 1, 
+            maps_pool: pool, 
+            team1_name: t1, 
+            team2_name: t2 
+        });
         
-        if(error) alert('Lỗi: ' + error.message);
-        else alert('Đã cập nhật cấu hình màn hình Map!');
+        if (error) {
+            console.error("Lỗi updateMapSettings:", error);
+            alert('❌ Lỗi cập nhật Map: ' + error.message);
+        } else {
+            alert('✅ Đã cập nhật thành công cấu hình màn hình Map!');
+        }
     }
 
+    // Reset Cảnh OBS (Dùng .upsert để tránh lỗi nếu row id=1 chưa tồn tại)
     async function resetMapDraft() {
-        if(!confirm('Bạn có chắc muốn Reset trạng thái Sẵn Sàng và Map đã random không?')) return;
-        const { error } = await supabaseClient.from('map_draft').update({ 
-            team1_ready: false, team2_ready: false, selected_map: null, status: 'waiting' 
-        }).eq('id', 1);
-        if(!error) alert('Đã Reset màn hình Map về trạng thái chờ!');
+        if (!confirm('Bạn có chắc muốn Reset trạng thái Sẵn Sàng và Map đã random không?')) return;
+        
+        const { error } = await supabaseClient.from('map_draft').upsert({ 
+            id: 1,
+            team1_ready: false, 
+            team2_ready: false, 
+            selected_map: null, 
+            status: 'waiting' 
+        });
+
+        if (error) {
+            console.error("Lỗi resetMapDraft:", error);
+            alert('❌ Lỗi Reset: ' + error.message);
+        } else {
+            alert('✅ Đã Reset màn hình Map về trạng thái chờ!');
+        }
     }
 </script>
 </body>
