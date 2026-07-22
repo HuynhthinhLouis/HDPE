@@ -62,11 +62,10 @@
             <button class="btn-green" onclick="saveAllMatches()" style="margin-top: 15px; font-size: 16px;">💾 LƯU TOÀN BỘ LỊCH THI ĐẤU & KẾT QUẢ</button>
         </div>
 
-        <!-- MÃ MỚI THÊM: QUẢN LÝ MAP & TÀI KHOẢN ĐỘI TRƯỞNG -->
+        <!-- QUẢN LÝ MAP & TÀI KHOẢN ĐỘI TRƯỞNG -->
         <div class="section" style="border-color: #00bcd4;">
             <h2 style="color: #00bcd4;">3. Quản Lý Trang Random Map & Đội Trưởng</h2>
             
-            <!-- Quản lý tài khoản Đội trưởng -->
             <div style="background: rgba(0, 188, 212, 0.1); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
                 <h3 style="margin-bottom: 10px; color: white;">Cấp tài khoản Đội Trưởng</h3>
                 <div class="grid-2">
@@ -77,7 +76,6 @@
                 <button class="btn-green" onclick="createCaptain()" style="margin-top: 10px;">Tạo Tài Khoản Đội Trưởng</button>
             </div>
 
-            <!-- Cài đặt Map Pool & Reset -->
             <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px;">
                 <h3 style="margin-bottom: 10px; color: white;">Điều khiển màn hình OBS Map</h3>
                 <label style="color: var(--val-gray);">Danh sách 12 Map (Cách nhau bằng dấu phẩy):</label>
@@ -92,7 +90,6 @@
                 </div>
             </div>
         </div>
-        <!-- KẾT THÚC MÃ MỚI THÊM -->
 
     </div>
 </div>
@@ -107,7 +104,15 @@
     async function loginAdmin() {
         const u = document.getElementById('adminUser').value;
         const p = document.getElementById('adminPass').value;
-        const { data } = await supabaseClient.from('admins').select('*').eq('username', u).eq('password', p).single();
+        // Đã thay .single() thành .maybeSingle() để chặn lỗi 406 khi sai thông tin
+        const { data, error } = await supabaseClient.from('admins').select('*').eq('username', u).eq('password', p).maybeSingle();
+        
+        if (error) {
+            console.error("Lỗi đăng nhập:", error);
+            alert("Lỗi kết nối cơ sở dữ liệu!");
+            return;
+        }
+
         if (data) {
             alert('✅ Đăng nhập QTV thành công!');
             document.getElementById('loginSection').style.display = 'none';
@@ -115,11 +120,13 @@
             await loadTeams();
             await loadSettings();
             await loadMatches();
-        } else { alert('❌ Sai tài khoản hoặc mật khẩu!'); }
+        } else { 
+            alert('❌ Sai tài khoản hoặc mật khẩu!'); 
+        }
     }
 
     async function loadSettings() {
-        const { data } = await supabaseClient.from('settings').select('*').eq('id', 'global').single();
+        const { data } = await supabaseClient.from('settings').select('*').eq('id', 'global').maybeSingle();
         const text = document.getElementById('publishStatusText');
         if (data && data.is_bracket_published) {
             text.innerHTML = '🟢 Trang chủ đang hiển thị: <span style="color:#28a745">BẢNG THI ĐẤU & KẾT QUẢ</span>';
@@ -145,16 +152,19 @@
     }
 
     async function loadMatches() {
-        // Tải lịch thi đấu theo thứ tự hợp lý: Bán kết -> Tranh hạng 3 -> Chung kết
         const { data: matches } = await supabaseClient.from('matches').select('*');
         const orderMap = { 'bk1': 1, 'bk2': 2, 'th3': 3, 'ck': 4 };
-        matches.sort((a, b) => (orderMap[a.id] || 99) - (orderMap[b.id] || 99));
+        if (matches) {
+            matches.sort((a, b) => (orderMap[a.id] || 99) - (orderMap[b.id] || 99));
+        }
 
         const container = document.getElementById('matchesContainer');
         container.innerHTML = '';
 
         let teamOptions = `<option value="">-- Chưa xác định --</option>`;
         registeredTeamsList.forEach(t => { teamOptions += `<option value="${t.team_name}">${t.team_name} (${t.team_tag})</option>`; });
+
+        if (!matches) return;
 
         matches.forEach(m => {
             container.innerHTML += `
@@ -165,8 +175,8 @@
                         <div><label>Đội 2:</label><select class="t2">${teamOptions}</select></div>
                     </div>
                     <div class="grid-2" style="margin-top: 10px;">
-                        <div><label>Thời gian (Để trống nếu chưa có):</label><input type="text" class="time" placeholder="VD: 20:00 - 15/07/2026" value="${m.match_time || ''}"></div>
-                        <div><label>Tỷ số BO3 (VD: 2 - 0, 2 - 1):</label><input type="text" class="score" placeholder="VD: 2 - 1" value="${m.score || ''}"></div>
+                        <div><label>Thời gian:</label><input type="text" class="time" placeholder="VD: 20:00 - 15/07/2026" value="${m.match_time || ''}"></div>
+                        <div><label>Tỷ số BO3:</label><input type="text" class="score" placeholder="VD: 2 - 1" value="${m.score || ''}"></div>
                     </div>
                     <div style="margin-top: 10px;">
                         <label style="color: var(--val-yellow);">👑 Đội Chiến Thắng:</label><select class="win">${teamOptions}</select>
@@ -181,7 +191,7 @@
     }
 
     async function saveAllMatches() {
-        const ids = ['bk1', 'bk2', 'th3', 'ck']; // Đã thêm trận 'th3'
+        const ids = ['bk1', 'bk2', 'th3', 'ck'];
         for (let id of ids) {
             const box = document.getElementById(`match_${id}`);
             if (!box) continue;
@@ -198,22 +208,26 @@
         loadMatches();
     }
 
-    // MÃ MỚI THÊM: CÁC HÀM XỬ LÝ TRANG MAP
     async function createCaptain() {
-        const u = document.getElementById('capUser').value;
-        const p = document.getElementById('capPass').value;
-        const t = document.getElementById('capTeam').value;
+        const u = document.getElementById('capUser').value.trim();
+        const p = document.getElementById('capPass').value.trim();
+        const t = document.getElementById('capTeam').value.trim();
         if(!u || !p || !t) return alert('Vui lòng điền đủ thông tin tài khoản!');
         
         const { error } = await supabaseClient.from('captain_accounts').insert([{ username: u, password: p, team_name: t }]);
         if(error) alert('Lỗi: ' + error.message);
-        else { alert('Đã tạo tài khoản cho đội ' + t); document.getElementById('capUser').value = ''; document.getElementById('capPass').value = ''; }
+        else { 
+            alert('Đã tạo tài khoản cho đội ' + t); 
+            document.getElementById('capUser').value = ''; 
+            document.getElementById('capPass').value = ''; 
+            document.getElementById('capTeam').value = '';
+        }
     }
 
     async function updateMapSettings() {
         const pool = document.getElementById('mapPoolInput').value;
-        const t1 = document.getElementById('obsTeam1').value;
-        const t2 = document.getElementById('obsTeam2').value;
+        const t1 = document.getElementById('obsTeam1').value.trim();
+        const t2 = document.getElementById('obsTeam2').value.trim();
         
         const { error } = await supabaseClient.from('map_draft').update({ 
             maps_pool: pool, team1_name: t1, team2_name: t2 
