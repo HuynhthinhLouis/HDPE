@@ -392,37 +392,45 @@
     // Tự động Roll Map 3 (Decider Map) do hệ thống thực hiện
     async function triggerSystemDeciderRoll() {
         localRolling = true;
-        
+    
         // Lấy pool map mới loại trừ Map 1 và Map 2
         const poolString = draftState.maps_pool || "Bind, Haven, Split, Ascent, Icebox, Breeze, Fracture, Pearl, Lotus, Sunset, Abyss";
         let mapList = poolString.split(',').map(m => m.trim()).filter(m => m !== '');
-        
-        // Lấy chính xác tên map 1 và map 2 từ biến local hiện tại hoặc cập nhật lại
+    
+        // Lấy chính xác tên map 1 và map 2 từ DB
         const { data } = await supabaseClient.from('map_draft').select('*').eq('id', 1).maybeSingle();
-        
+    
         mapList = mapList.filter(m => 
             m.toLowerCase() !== data.map1_name.toLowerCase() && 
             m.toLowerCase() !== data.map2_name.toLowerCase()
         );
 
-        // Chạy hiệu ứng chạy chữ cho Map Decider
+        // Chạy hiệu ứng xáo chữ cho Map Decider
         let counter = 0;
         const interval = setInterval(async () => {
             const randomMap = mapList[Math.floor(Math.random() * mapList.length)];
             document.getElementById('map3Result').innerText = randomMap;
             counter++;
-            
-            if(counter > 25) { // Hiệu ứng roll map cuối dài hơn một chút để tạo sự kịch tính
+        
+            if(counter > 25) {
                 clearInterval(interval);
                 const finalDeciderMap = mapList[Math.floor(Math.random() * mapList.length)];
-                
+            
+                // Tự động bốc Side ngẫu nhiên cho Map 3
+                const sides = ["ATTACK", "DEFEND"];
+                const sideChoice = sides[Math.floor(Math.random() * sides.length)];
+                const t1Name = draftState.team1_name || 'Team 1';
+                const t2Name = draftState.team2_name || 'Team 2';
+                const t2Side = sideChoice === "ATTACK" ? "DEFEND" : "ATTACK";
+                const sideText = `${t1Name}: ${sideChoice} | ${t2Name}: ${t2Side}`;
+
                 // Cập nhật hoàn thành lên hệ thống DB
                 await supabaseClient.from('map_draft').update({
                     map3_name: finalDeciderMap,
-                    map3_side: "KNIFE ROUND FOR SIDE",
+                    map3_side: sideText,
                     status: 'finished'
                 }).eq('id', 1);
-                
+            
                 localRolling = false;
             }
         }, 100);
