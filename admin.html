@@ -61,6 +61,39 @@
             <div id="matchesContainer"></div>
             <button class="btn-green" onclick="saveAllMatches()" style="margin-top: 15px; font-size: 16px;">💾 LƯU TOÀN BỘ LỊCH THI ĐẤU & KẾT QUẢ</button>
         </div>
+
+        <!-- MÃ MỚI THÊM: QUẢN LÝ MAP & TÀI KHOẢN ĐỘI TRƯỞNG -->
+        <div class="section" style="border-color: #00bcd4;">
+            <h2 style="color: #00bcd4;">3. Quản Lý Trang Random Map & Đội Trưởng</h2>
+            
+            <!-- Quản lý tài khoản Đội trưởng -->
+            <div style="background: rgba(0, 188, 212, 0.1); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
+                <h3 style="margin-bottom: 10px; color: white;">Cấp tài khoản Đội Trưởng</h3>
+                <div class="grid-2">
+                    <input type="text" id="capUser" placeholder="Tên đăng nhập (VD: cap_sentinels)">
+                    <input type="password" id="capPass" placeholder="Mật khẩu">
+                </div>
+                <input type="text" id="capTeam" placeholder="Nhập tên Đội (Phải khớp chính xác tên đội đã đăng ký)">
+                <button class="btn-green" onclick="createCaptain()" style="margin-top: 10px;">Tạo Tài Khoản Đội Trưởng</button>
+            </div>
+
+            <!-- Cài đặt Map Pool & Reset -->
+            <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px;">
+                <h3 style="margin-bottom: 10px; color: white;">Điều khiển màn hình OBS Map</h3>
+                <label style="color: var(--val-gray);">Danh sách 12 Map (Cách nhau bằng dấu phẩy):</label>
+                <input type="text" id="mapPoolInput" placeholder="Bind, Haven, Split, Ascent, Icebox, Breeze, Fracture, Pearl, Lotus, Sunset, Abyss, MỚI">
+                <div class="grid-2" style="margin-top: 10px;">
+                    <input type="text" id="obsTeam1" placeholder="Tên Đội 1 (Trên màn hình Map)">
+                    <input type="text" id="obsTeam2" placeholder="Tên Đội 2 (Trên màn hình Map)">
+                </div>
+                <div class="grid-2" style="margin-top: 15px;">
+                    <button class="btn-green" onclick="updateMapSettings()">💾 Cập Nhật Cài Đặt Map</button>
+                    <button class="btn-yellow" onclick="resetMapDraft()">🔄 Khởi Tạo / Reset Lại Cảnh OBS</button>
+                </div>
+            </div>
+        </div>
+        <!-- KẾT THÚC MÃ MỚI THÊM -->
+
     </div>
 </div>
 
@@ -163,6 +196,39 @@
         }
         alert('💾 Đã lưu thành công toàn bộ lịch đấu và kết quả!');
         loadMatches();
+    }
+
+    // MÃ MỚI THÊM: CÁC HÀM XỬ LÝ TRANG MAP
+    async function createCaptain() {
+        const u = document.getElementById('capUser').value;
+        const p = document.getElementById('capPass').value;
+        const t = document.getElementById('capTeam').value;
+        if(!u || !p || !t) return alert('Vui lòng điền đủ thông tin tài khoản!');
+        
+        const { error } = await supabaseClient.from('captain_accounts').insert([{ username: u, password: p, team_name: t }]);
+        if(error) alert('Lỗi: ' + error.message);
+        else { alert('Đã tạo tài khoản cho đội ' + t); document.getElementById('capUser').value = ''; document.getElementById('capPass').value = ''; }
+    }
+
+    async function updateMapSettings() {
+        const pool = document.getElementById('mapPoolInput').value;
+        const t1 = document.getElementById('obsTeam1').value;
+        const t2 = document.getElementById('obsTeam2').value;
+        
+        const { error } = await supabaseClient.from('map_draft').update({ 
+            maps_pool: pool, team1_name: t1, team2_name: t2 
+        }).eq('id', 1);
+        
+        if(error) alert('Lỗi: ' + error.message);
+        else alert('Đã cập nhật cấu hình màn hình Map!');
+    }
+
+    async function resetMapDraft() {
+        if(!confirm('Bạn có chắc muốn Reset trạng thái Sẵn Sàng và Map đã random không?')) return;
+        const { error } = await supabaseClient.from('map_draft').update({ 
+            team1_ready: false, team2_ready: false, selected_map: null, status: 'waiting' 
+        }).eq('id', 1);
+        if(!error) alert('Đã Reset màn hình Map về trạng thái chờ!');
     }
 </script>
 </body>
