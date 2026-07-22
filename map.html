@@ -248,14 +248,27 @@
     }
 
     function checkCaptainButtons() {
+        // Nếu chưa có dữ liệu hoặc là OBS thì không làm gì cả
         if(!draftState || !currentCaptainTeam || currentCaptainTeam === 'OBS') return;
         
         const btn1 = document.getElementById('btnReady1');
         const btn2 = document.getElementById('btnReady2');
-        btn1.style.display = 'none'; btn2.style.display = 'none';
+        
+        // Mặc định ẩn nút
+        btn1.style.display = 'none'; 
+        btn2.style.display = 'none';
 
-        if(currentCaptainTeam === draftState.team1_name && !draftState.team1_ready) btn1.style.display = 'inline-block';
-        if(currentCaptainTeam === draftState.team2_name && !draftState.team2_ready) btn2.style.display = 'inline-block';
+        // TỰ ĐỘNG CHUẨN HÓA: Ép về chữ thường và xóa khoảng trắng dư thừa ở 2 đầu
+        const capTeam = String(currentCaptainTeam).trim().toLowerCase();
+        const t1 = String(draftState.team1_name || '').trim().toLowerCase();
+        const t2 = String(draftState.team2_name || '').trim().toLowerCase();
+
+        // IN RA CONSOLE ĐỂ BẠN KIỂM TRA LỖI DO ĐÁNH MÁY (Bấm F12 để xem)
+        console.log(`[KIỂM TRA] Đội của bạn: '${capTeam}' | Hệ thống đang set Đội 1: '${t1}' | Đội 2: '${t2}'`);
+
+        // Kiểm tra và hiển thị nút
+        if(capTeam === t1 && !draftState.team1_ready) btn1.style.display = 'inline-block';
+        if(capTeam === t2 && !draftState.team2_ready) btn2.style.display = 'inline-block';
     }
 
     async function setReady(teamNum) {
