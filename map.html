@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>OBS - Valorant Map Draft BO3</title>
+    <title>OBS - Valorant Map Draft BO3 (Turn-based)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --val-red: #ff4655; --val-dark: #0f1923; --val-text: #ece8e1; --glass: rgba(15, 25, 35, 0.85); }
@@ -27,17 +27,17 @@
 
         /* GIAO DIỆN OBS */
         .obs-container {
-            width: 1200px; height: 750px; background: rgba(15, 25, 35, 0.7);
+            width: 1250px; height: 750px; background: rgba(15, 25, 35, 0.7);
             border: 2px solid rgba(255,255,255,0.1); border-radius: 20px;
             display: flex; flex-direction: column; padding: 30px;
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
 
-        .teams-wrapper { display: flex; justify-content: space-between; align-items: center; flex: 1; }
+        .teams-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         
         .team-side {
             width: 40%; text-align: center; background: rgba(0,0,0,0.4);
-            padding: 30px; border-radius: 15px; border-bottom: 5px solid #333; transition: all 0.3s;
+            padding: 25px; border-radius: 15px; border-bottom: 5px solid #333; transition: all 0.3s;
         }
         .team-side.ready { border-color: #28a745; box-shadow: 0 0 30px rgba(40,167,69,0.3); }
         .team-name { font-size: 36px; font-weight: 900; text-transform: uppercase; margin-bottom: 15px; }
@@ -48,44 +48,53 @@
         .status-badge.ready { background: #28a745; }
 
         .center-stage { width: 20%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .vs-text { font-size: 40px; font-weight: 900; color: var(--val-red); margin-bottom: 20px;}
+        .vs-text { font-size: 40px; font-weight: 900; color: var(--val-red); }
+        .turn-announcement { font-size: 16px; color: #ffd700; font-weight: bold; margin-top: 10px; text-align: center; text-transform: uppercase;}
         
-        .btn-roll, .btn-ready {
-            padding: 15px 30px; font-size: 20px; font-weight: bold; color: white;
-            border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase;
-            box-shadow: 0 0 20px rgba(255,0,0,0.3); transition: 0.3s;
+        /* NÚT ĐIỀU KHIỂN */
+        .btn-action {
+            padding: 12px 24px; font-size: 16px; font-weight: bold; color: white;
+            border: none; border-radius: 8px; cursor: pointer; text-transform: uppercase;
+            transition: 0.3s; margin-top: 15px; display: none; width: 100%;
         }
         .btn-ready { background: #008CBA; display: none; }
-        .btn-roll { background: var(--val-red); margin-top: 20px; opacity: 0.3; pointer-events: none; }
-        .btn-roll.active { opacity: 1; pointer-events: auto; background: linear-gradient(45deg, #ff4655, #ff7b00); }
+        .btn-roll-turn { background: linear-gradient(45deg, #ff4655, #ff7b00); box-shadow: 0 0 20px rgba(255,70,85,0.4); }
 
         /* KHU VỰC HIỂN THỊ MAP BO3 */
         .map-result-container {
-            text-align: center; margin-top: 30px; height: 180px;
+            text-align: center; margin-top: 20px; flex: 1; display: flex; flex-direction: column; justify-content: center;
         }
-        .rolling-text { font-size: 30px; font-weight: bold; color: #ffd700; display: none; letter-spacing: 5px; margin-top: 50px;}
         
-        /* Box chứa 3 map */
         .bo3-container {
-            display: none; justify-content: center; gap: 20px; margin-top: 15px;
+            display: flex; justify-content: center; gap: 25px; margin-top: 15px;
         }
         .map-card {
-            background: rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.2);
-            border-radius: 12px; padding: 20px 30px; min-width: 280px;
+            background: rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 12px; padding: 25px; min-width: 320px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5); position: relative;
-            overflow: hidden;
+            overflow: hidden; text-align: center; transition: all 0.5s ease;
         }
-        /* Style màu cho từng card */
         .map-card:nth-child(1) { border-top: 5px solid #008CBA; }
         .map-card:nth-child(2) { border-top: 5px solid var(--val-red); }
         .map-card:nth-child(3) { border-top: 5px solid #ffd700; }
 
-        .map-label {
-            font-size: 14px; font-weight: bold; color: #aaa; text-transform: uppercase; margin-bottom: 5px;
-        }
+        .map-label { font-size: 14px; font-weight: bold; color: #aaa; text-transform: uppercase; margin-bottom: 8px; }
+        
         .map-name {
-            font-size: 36px; font-weight: 900; color: white; text-transform: uppercase;
-            text-shadow: 0 0 15px rgba(255,255,255,0.3);
+            font-size: 38px; font-weight: 900; color: white; text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(255,255,255,0.3); min-height: 50px;
+        }
+        .map-side-detail {
+            margin-top: 15px; padding: 8px; background: rgba(255,255,255,0.05);
+            border-radius: 6px; font-size: 13px; font-weight: bold; letter-spacing: 1px;
+        }
+
+        /* HIỆU ỨNG NHẤP NHÁY ĐANG ROLL */
+        .rolling .map-name {
+            color: #ffd700; animation: blink 0.15s infinite alternate; text-shadow: 0 0 10px #ffd700;
+        }
+        @keyframes blink {
+            0% { opacity: 0.3; } 100% { opacity: 1; }
         }
     </style>
 </head>
@@ -94,7 +103,7 @@
 <div id="loginOverlay">
     <div class="login-box">
         <h2 style="margin-bottom: 5px; color: var(--val-red);">ĐỘI TRƯỞNG LOGIN</h2>
-        <p style="margin-bottom: 20px; font-size: 14px; color: #aaa;">Đăng nhập để xác nhận Sẵn sàng</p>
+        <p style="margin-bottom: 20px; font-size: 14px; color: #aaa;">Đăng nhập để thực hiện Ban/Pick</p>
         <input type="text" id="capUser" placeholder="Tên tài khoản">
         <input type="password" id="capPass" placeholder="Mật khẩu">
         <button onclick="loginCaptain()">Xác Nhận</button>
@@ -107,37 +116,39 @@
         <div class="team-side" id="t1Box">
             <div class="team-name" id="t1Name">TEAM 1</div>
             <div class="status-badge" id="t1Status">CHỜ XÁC NHẬN</div>
-            <button class="btn-ready" id="btnReady1" onclick="setReady(1)">SẴN SÀNG</button>
+            <button class="btn-action btn-ready" id="btnReady1" onclick="setReady(1)">SẴN SÀNG</button>
+            <button class="btn-action btn-roll-turn" id="btnRollT1" onclick="startRollTurn(1)">ROLL MAP 1 & SIDE</button>
         </div>
 
         <div class="center-stage">
             <div class="vs-text">VS</div>
-            <button class="btn-roll" id="btnRoll" onclick="startRollMap()">ROLL BO3 MAPS</button>
+            <div class="turn-announcement" id="turnStatus">ĐANG CHỜ ĐỘI TRƯỞNG</div>
         </div>
 
         <div class="team-side" id="t2Box">
             <div class="team-name" id="t2Name">TEAM 2</div>
             <div class="status-badge" id="t2Status">CHỜ XÁC NHẬN</div>
-            <button class="btn-ready" id="btnReady2" onclick="setReady(2)">SẴN SÀNG</button>
+            <button class="btn-action btn-ready" id="btnReady2" onclick="setReady(2)">SẴN SÀNG</button>
+            <button class="btn-action btn-roll-turn" id="btnRollT2" onclick="startRollTurn(2)">ROLL MAP 2 & SIDE</button>
         </div>
     </div>
 
-    <!-- KẾT QUẢ BO3 MAPS -->
     <div class="map-result-container">
-        <div class="rolling-text" id="rollingAnim">ĐANG TÌM KIẾM CHIẾN TRƯỜNG...</div>
-        
-        <div class="bo3-container" id="finalMapDisplay">
-            <div class="map-card">
-                <div class="map-label">GAME 1</div>
+        <div class="bo3-container">
+            <div class="map-card" id="cardMap1">
+                <div class="map-label">GAME 1 - BỞI TEAM 1</div>
                 <div class="map-name" id="map1Result">---</div>
+                <div class="map-side-detail" id="map1Side">SIDE: TBD</div>
             </div>
-            <div class="map-card">
-                <div class="map-label">GAME 2</div>
+            <div class="map-card" id="cardMap2">
+                <div class="map-label">GAME 2 - BỞI TEAM 2</div>
                 <div class="map-name" id="map2Result">---</div>
+                <div class="map-side-detail" id="map2Side">SIDE: TBD</div>
             </div>
-            <div class="map-card">
-                <div class="map-label">GAME 3 (DECIDER)</div>
+            <div class="map-card" id="cardMap3">
+                <div class="map-label">GAME 3 - DECIDER (HỆ THỐNG)</div>
                 <div class="map-name" id="map3Result">---</div>
+                <div class="map-side-detail" id="map3Side">SIDE: KNIFE ROUND</div>
             </div>
         </div>
     </div>
@@ -150,23 +161,20 @@
 
     let currentCaptainTeam = null; 
     let draftState = null;
+    let localRolling = false; // Ngăn chặn xung đột hiệu ứng local công dồn
 
     async function loginCaptain() {
         const u = document.getElementById('capUser').value;
         const p = document.getElementById('capPass').value;
         const { data, error } = await supabaseClient.from('captain_accounts').select('*').eq('username', u).eq('password', p).maybeSingle();
         
-        if (error) {
-            console.error("Lỗi đăng nhập:", error);
-            alert("Lỗi kết nối cơ sở dữ liệu!");
-            return;
-        }
+        if (error) { alert("Lỗi kết nối cơ sở dữ liệu!"); return; }
 
         if(data) {
             currentCaptainTeam = data.team_name;
             document.getElementById('loginOverlay').style.display = 'none';
             alert('Đăng nhập thành công! Team: ' + currentCaptainTeam);
-            checkCaptainButtons();
+            checkControlButtons();
         } else {
             alert('Sai tài khoản hoặc mật khẩu!');
         }
@@ -177,118 +185,247 @@
         currentCaptainTeam = 'OBS'; 
     }
 
+    // Liên tục quét trạng thái database mỗi 1.5s
     setInterval(fetchDraftState, 1500); 
 
     async function fetchDraftState() {
         const { data, error } = await supabaseClient.from('map_draft').select('*').eq('id', 1).maybeSingle();
-        
         if (error || !data) return;
         draftState = data;
 
+        // Cập nhật Tên Đội
         document.getElementById('t1Name').innerText = draftState.team1_name || 'TEAM 1';
         document.getElementById('t2Name').innerText = draftState.team2_name || 'TEAM 2';
 
-        updateTeamUI(1, draftState.team1_ready);
-        updateTeamUI(2, draftState.team2_ready);
-        checkCaptainButtons();
+        // Trạng thái Sẵn sàng ban đầu
+        updateReadyUI(1, draftState.team1_ready);
+        updateReadyUI(2, draftState.team2_ready);
+        
+        // Cập nhật text hiển thị vòng đấu (Dành cho OBS xem)
+        updateTurnStatusText();
 
-        const btnRoll = document.getElementById('btnRoll');
-        if(draftState.team1_ready && draftState.team2_ready && draftState.status === 'waiting' && currentCaptainTeam !== 'OBS') {
-            btnRoll.classList.add('active'); 
-        } else {
-            btnRoll.classList.remove('active');
-        }
+        // Xử lý hiển thị thông tin Map và Kích hoạt Hiệu ứng Roll trên OBS dựa vào `status`
+        handleMapDisplayAndEffects();
 
-        const rollAnim = document.getElementById('rollingAnim');
-        const finalDisplay = document.getElementById('finalMapDisplay');
-
-        if(draftState.status === 'rolling') {
-            rollAnim.style.display = 'block';
-            finalDisplay.style.display = 'none';
-        } else if (draftState.status === 'finished' && draftState.selected_map) {
-            rollAnim.style.display = 'none';
-            
-            const maps = draftState.selected_map.split(' | ');
-            if (maps.length >= 3) {
-                document.getElementById('map1Result').innerText = maps[0];
-                document.getElementById('map2Result').innerText = maps[1];
-                document.getElementById('map3Result').innerText = maps[2];
-            }
-            
-            finalDisplay.style.display = 'flex';
-            document.getElementById('btnRoll').style.display = 'none'; 
-        } else {
-            rollAnim.style.display = 'none';
-            finalDisplay.style.display = 'none';
-            document.getElementById('btnRoll').style.display = 'block';
-        }
+        // Kiểm tra để ẩn/hiện nút bấm cho các Đội trưởng
+        checkControlButtons();
     }
 
-    function updateTeamUI(teamNum, isReady) {
+    function updateReadyUI(teamNum, isReady) {
         const box = document.getElementById(`t${teamNum}Box`);
         const status = document.getElementById(`t${teamNum}Status`);
         if(isReady) {
-            box.classList.add('ready');
-            status.classList.add('ready');
+            box.classList.add('ready'); status.classList.add('ready');
             status.innerText = 'ĐÃ SẴN SÀNG';
         } else {
-            box.classList.remove('ready');
-            status.classList.remove('ready');
+            box.classList.remove('ready'); status.classList.remove('ready');
             status.innerText = 'CHỜ XÁC NHẬN';
         }
     }
 
-    function checkCaptainButtons() {
+    function updateTurnStatusText() {
+        const ts = document.getElementById('turnStatus');
+        if (!draftState.team1_ready || !draftState.team2_ready) {
+            ts.innerText = "CHỜ HAI ĐỘI SẴN SÀNG";
+        } else if (draftState.status === 'waiting' || draftState.status === 't1_rolling') {
+            ts.innerText = `LƯỢT VÒNG: ${draftState.team1_name.toUpperCase()} ROLL`;
+        } else if (draftState.status === 't2_rolling') {
+            ts.innerText = `LƯỢT VÒNG: ${draftState.team2_name.toUpperCase()} ROLL`;
+        } else if (draftState.status === 'decider_rolling') {
+            ts.innerText = "HỆ THỐNG ĐANG ROLL MAP DECIDER...";
+        } else if (draftState.status === 'finished') {
+            ts.innerText = "DRAFT HOÀN THÀNH!";
+        }
+    }
+
+    function handleMapDisplayAndEffects() {
+        if (localRolling) return; // Nếu đang chạy hiệu ứng giả lập chạy chữ cục bộ thì bỏ qua update text đè
+
+        // Map 1
+        const m1Card = document.getElementById('cardMap1');
+        if (draftState.status === 't1_rolling') {
+            m1Card.classList.add('rolling');
+            document.getElementById('map1Result').innerText = "ROLLING...";
+        } else {
+            m1Card.classList.remove('rolling');
+            document.getElementById('map1Result').innerText = draftState.map1_name || "---";
+            document.getElementById('map1Side').innerText = draftState.map1_side ? `SIDE: ${draftState.map1_side}` : "SIDE: TBD";
+        }
+
+        // Map 2
+        const m2Card = document.getElementById('cardMap2');
+        if (draftState.status === 't2_rolling') {
+            m2Card.classList.add('rolling');
+            document.getElementById('map2Result').innerText = "ROLLING...";
+        } else {
+            m2Card.classList.remove('rolling');
+            document.getElementById('map2Result').innerText = draftState.map2_name || "---";
+            document.getElementById('map2Side').innerText = draftState.map2_side ? `SIDE: ${draftState.map2_side}` : "SIDE: TBD";
+        }
+
+        // Map 3 (Decider)
+        const m3Card = document.getElementById('cardMap3');
+        if (draftState.status === 'decider_rolling') {
+            m3Card.classList.add('rolling');
+            document.getElementById('map3Result').innerText = "ROLLING...";
+        } else {
+            m3Card.classList.remove('rolling');
+            document.getElementById('map3Result').innerText = draftState.map3_name || "---";
+            document.getElementById('map3Side').innerText = draftState.map3_side ? `SIDE: ${draftState.map3_side}` : "SIDE: KNIFE ROUND";
+        }
+    }
+
+    function checkControlButtons() {
         if(!draftState || !currentCaptainTeam || currentCaptainTeam === 'OBS') return;
         
-        const btn1 = document.getElementById('btnReady1');
-        const btn2 = document.getElementById('btnReady2');
-        
-        // Mặc định ẩn 2 nút
-        btn1.style.display = 'none'; 
-        btn2.style.display = 'none';
+        const btnReady1 = document.getElementById('btnReady1');
+        const btnReady2 = document.getElementById('btnReady2');
+        const btnRollT1 = document.getElementById('btnRollT1');
+        const btnRollT2 = document.getElementById('btnRollT2');
 
-        // Ép kiểu về dạng chuỗi thường và xóa khoảng trắng dư thừa 2 đầu để chống lỗi gõ sai
-        const capTeam = String(currentCaptainTeam || '').trim().toLowerCase();
-        const team1 = String(draftState.team1_name || '').trim().toLowerCase();
-        const team2 = String(draftState.team2_name || '').trim().toLowerCase();
+        // Mặc định ẩn tất cả các nút điều khiển
+        btnReady1.style.display = 'none'; btnReady2.style.display = 'none';
+        btnRollT1.style.display = 'none'; btnRollT2.style.display = 'none';
 
-        // Kiểm tra và hiển thị nút cho chính xác đội của người đó
-        if(capTeam === team1 && !draftState.team1_ready) btn1.style.display = 'inline-block';
-        if(capTeam === team2 && !draftState.team2_ready) btn2.style.display = 'inline-block';
+        const capTeam = String(currentCaptainTeam).trim().toLowerCase();
+        const t1Name = String(draftState.team1_name).trim().toLowerCase();
+        const t2Name = String(draftState.team2_name).trim().toLowerCase();
+
+        // 1. Hiện nút sẵn sàng nếu chưa sẵn sàng
+        if (capTeam === t1Name && !draftState.team1_ready) btnReady1.style.display = 'inline-block';
+        if (capTeam === t2Name && !draftState.team2_ready) btnReady2.style.display = 'inline-block';
+
+        // 2. Kiểm tra điều kiện mở nút Roll theo lượt (khi cả 2 đã ready)
+        if (draftState.team1_ready && draftState.team2_ready) {
+            if (draftState.status === 'waiting' && capTeam === t1Name) {
+                btnRollT1.style.display = 'inline-block';
+            }
+            // Sau khi có Map 1 và status chuyển đổi thích hợp sang lượt Team 2
+            if (draftState.map1_name && !draftState.map2_name && draftState.status !== 't1_rolling' && draftState.status !== 't2_rolling' && capTeam === t2Name) {
+                btnRollT2.style.display = 'inline-block';
+            }
+        }
     }
 
     async function setReady(teamNum) {
-        // Ẩn nút ngay lập tức sau khi bấm để tránh click nhiều lần
         document.getElementById(`btnReady${teamNum}`).style.display = 'none';
-        
         const updateField = teamNum === 1 ? { team1_ready: true } : { team2_ready: true };
         await supabaseClient.from('map_draft').update(updateField).eq('id', 1);
     }
 
-    async function startRollMap() {
-        if(!draftState || draftState.status !== 'waiting') return;
+    // Hàm thực hiện Roll từng Map của Đội trưởng 1 và Đội trưởng 2
+    async function startRollTurn(teamNum) {
+        if (!draftState) return;
         
-        await supabaseClient.from('map_draft').update({ status: 'rolling' }).eq('id', 1);
+        // Chặn bấm nút trùng lặp liên tục
+        document.getElementById(`btnRollT${teamNum}`).style.display = 'none';
+        localRolling = true;
 
+        const nextStatus = teamNum === 1 ? 't1_rolling' : 't2_rolling';
+        // Cập nhật trạng thái đang roll lên DB để tất cả màn hình OBS thấy hiệu ứng nhấp nháy chữ
+        await supabaseClient.from('map_draft').update({ status: nextStatus }).eq('id', 1);
+
+        // Lấy danh sách map pool
         const poolString = draftState.maps_pool || "Bind, Haven, Split, Ascent, Icebox, Breeze, Fracture, Pearl, Lotus, Sunset, Abyss";
-        const mapList = poolString.split(',').map(m => m.trim()).filter(m => m !== '');
+        let mapList = poolString.split(',').map(m => m.trim()).filter(m => m !== '');
 
-        // Thuật toán xáo trộn mảng để lấy 3 map không trùng
-        for (let i = mapList.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [mapList[i], mapList[j]] = [mapList[j], mapList[i]];
+        // Loại bỏ các map đã được chọn trước đó ra khỏi pool
+        if (teamNum === 2 && draftState.map1_name) {
+            mapList = mapList.filter(m => m.toLowerCase() !== draftState.map1_name.toLowerCase());
         }
-        
-        const bo3Maps = [mapList[0], mapList[1], mapList[2]];
-        const resultString = bo3Maps.join(' | ');
 
-        setTimeout(async () => {
-            await supabaseClient.from('map_draft').update({ 
-                status: 'finished', 
-                selected_map: resultString 
-            }).eq('id', 1);
-        }, 3000);
+        // Chạy hiệu ứng xáo chữ ngẫu nhiên (Local OBS Animation effect)
+        const targetResultId = `map${teamNum}Result`;
+        let counter = 0;
+        const interval = setInterval(() => {
+            const randomMap = mapList[Math.floor(Math.random() * mapList.length)];
+            document.getElementById(targetResultId).innerText = randomMap;
+            counter++;
+            if(counter > 20) { // Chạy tầm 2 giây hiệu ứng đổi chữ liên tục
+                clearInterval(interval);
+                executeFinalRollLogic(teamNum, mapList);
+            }
+        }, 100);
+    }
+
+    // Tính toán kết quả map cuối cùng sau khi hết thời gian chạy hiệu ứng xáo chữ
+    async function executeFinalRollLogic(teamNum, currentPool) {
+        // Lấy ngẫu nhiên 1 map
+        const selectedMap = currentPool[Math.floor(Math.random() * currentPool.length)];
+        
+        // Tự động bốc Side ngẫu nhiên: Công (ATTACK) hoặc Thủ (DEFEND)
+        const sides = ["ATTACK", "DEFEND"];
+        const t1SideChoice = sides[Math.floor(Math.random() * sides.length)];
+        
+        let sideText = "";
+        if (teamNum === 1) {
+            const t2Side = t1SideChoice === "ATTACK" ? "DEFEND" : "ATTACK";
+            sideText = `${draftState.team1_name}: ${t1SideChoice} | ${draftState.team2_name}: ${t2Side}`;
+        } else {
+            // Đối với map 2, lấy ngẫu nhiên side cho Team 2
+            const t2SideChoice = sides[Math.floor(Math.random() * sides.length)];
+            const t1Side = t2SideChoice === "ATTACK" ? "DEFEND" : "ATTACK";
+            sideText = `${draftState.team1_name}: ${t1Side} | ${draftState.team2_name}: ${t2SideChoice}`;
+        }
+
+        // Cập nhật dữ liệu Map vừa bốc lên Supabase
+        const updateData = {};
+        if (teamNum === 1) {
+            updateData.map1_name = selectedMap;
+            updateData.map1_side = sideText;
+            updateData.status = 't1_finished'; // tạm thời để hệ thống biết đã roll xong M1
+        } else {
+            updateData.map2_name = selectedMap;
+            updateData.map2_side = sideText;
+            updateData.status = 'decider_rolling'; // Kích hoạt luôn trạng thái tự động roll Decider
+        }
+
+        await supabaseClient.from('map_draft').update(updateData).eq('id', 1);
+        localRolling = false;
+
+        // Nếu vừa roll xong Map 2, kích hoạt chuỗi tự động Roll Map 3 (Decider) ngay sau đó 1.5 giây
+        if (teamNum === 2) {
+            setTimeout(triggerSystemDeciderRoll, 1500);
+        }
+    }
+
+    // Tự động Roll Map 3 (Decider Map) do hệ thống thực hiện
+    async function triggerSystemDeciderRoll() {
+        localRolling = true;
+        
+        // Lấy pool map mới loại trừ Map 1 và Map 2
+        const poolString = draftState.maps_pool || "Bind, Haven, Split, Ascent, Icebox, Breeze, Fracture, Pearl, Lotus, Sunset, Abyss";
+        let mapList = poolString.split(',').map(m => m.trim()).filter(m => m !== '');
+        
+        // Lấy chính xác tên map 1 và map 2 từ biến local hiện tại hoặc cập nhật lại
+        const { data } = await supabaseClient.from('map_draft').select('*').eq('id', 1).maybeSingle();
+        
+        mapList = mapList.filter(m => 
+            m.toLowerCase() !== data.map1_name.toLowerCase() && 
+            m.toLowerCase() !== data.map2_name.toLowerCase()
+        );
+
+        // Chạy hiệu ứng chạy chữ cho Map Decider
+        let counter = 0;
+        const interval = setInterval(async () => {
+            const randomMap = mapList[Math.floor(Math.random() * mapList.length)];
+            document.getElementById('map3Result').innerText = randomMap;
+            counter++;
+            
+            if(counter > 25) { // Hiệu ứng roll map cuối dài hơn một chút để tạo sự kịch tính
+                clearInterval(interval);
+                const finalDeciderMap = mapList[Math.floor(Math.random() * mapList.length)];
+                
+                // Cập nhật hoàn thành lên hệ thống DB
+                await supabaseClient.from('map_draft').update({
+                    map3_name: finalDeciderMap,
+                    map3_side: "KNIFE ROUND FOR SIDE",
+                    status: 'finished'
+                }).eq('id', 1);
+                
+                localRolling = false;
+            }
+        }, 100);
     }
 </script>
 
