@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>OBS - Valorant Map Draft</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --val-red: #ff4655; --val-dark: #0f1923; --val-text: #ece8e1; --glass: rgba(15, 25, 35, 0.85); }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { 
+            background: url('https://images4.alphacoders.com/136/1363796.jpeg') center/cover no-repeat;
+            color: var(--val-text); height: 100vh; display: flex; justify-content: center; align-items: center;
+            overflow: hidden; backdrop-filter: blur(5px);
+        }
+        
+        /* GIAO DIỆN ĐĂNG NHẬP (Chỉ hiển thị cho đội trưởng) */
+        #loginOverlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 100;
+        }
+        .login-box {
+            background: var(--glass); padding: 40px; border-top: 5px solid var(--val-red);
+            border-radius: 12px; width: 400px; text-align: center; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .login-box input { width: 100%; padding: 12px; margin: 10px 0; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; border-radius: 5px;}
+        .login-box button { width: 100%; padding: 12px; background: var(--val-red); color: white; font-weight: bold; border: none; cursor: pointer; border-radius: 5px;}
+
+        /* GIAO DIỆN OBS (Hiển thị Map) */
+        .obs-container {
+            width: 1200px; height: 700px; background: rgba(15, 25, 35, 0.7);
+            border: 2px solid rgba(255,255,255,0.1); border-radius: 20px;
+            display: flex; flex-direction: column; padding: 30px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+
+        .teams-wrapper { display: flex; justify-content: space-between; align-items: center; flex: 1; }
+        
+        .team-side {
+            width: 40%; text-align: center; background: rgba(0,0,0,0.4);
+            padding: 30px; border-radius: 15px; border-bottom: 5px solid #333; transition: all 0.3s;
+        }
+        .team-side.ready { border-color: #28a745; box-shadow: 0 0 30px rgba(40,167,69,0.3); }
+        .team-name { font-size: 36px; font-weight: 900; text-transform: uppercase; margin-bottom: 15px; }
+        .status-badge {
+            display: inline-block; padding: 8px 20px; background: #333; color: white;
+            font-weight: bold; border-radius: 20px; text-transform: uppercase;
+        }
+        .status-badge.ready { background: #28a745; }
+
+        .center-stage { width: 20%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .vs-text { font-size: 40px; font-weight: 900; color: var(--val-red); margin-bottom: 20px;}
+        
+        .btn-roll, .btn-ready {
+            padding: 15px 30px; font-size: 20px; font-weight: bold; color: white;
+            border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase;
+            box-shadow: 0 0 20px rgba(255,0,0,0.3); transition: 0.3s;
+        }
+        .btn-ready { background: #008CBA; display: none; }
+        .btn-roll { background: var(--val-red); margin-top: 20px; opacity: 0.3; pointer-events: none; }
+        .btn-roll.active { opacity: 1; pointer-events: auto; background: linear-gradient(45deg, #ff4655, #ff7b00); }
+
+        /* KHU VỰC HIỂN THỊ MAP */
+        .map-result-container {
+            text-align: center; margin-top: 20px; height: 150px;
+        }
+        .rolling-text { font-size: 30px; font-weight: bold; color: #ffd700; display: none; letter-spacing: 5px; }
+        .final-map { 
+            font-size: 60px; font-weight: 900; color: white; text-transform: uppercase;
+            text-shadow: 0 0 20px rgba(255,255,255,0.5); display: none;
+            background: linear-gradient(to right, transparent, var(--val-red), transparent);
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- KHUNG ĐĂNG NHẬP CHO ĐỘI TRƯỞNG -->
+<div id="loginOverlay">
+    <div class="login-box">
+        <h2 style="margin-bottom: 5px; color: var(--val-red);">ĐỘI TRƯỞNG LOGIN</h2>
+        <p style="margin-bottom: 20px; font-size: 14px; color: #aaa;">Đăng nhập để xác nhận Sẵn sàng</p>
+        <input type="text" id="capUser" placeholder="Tên tài khoản">
+        <input type="password" id="capPass" placeholder="Mật khẩu">
+        <button onclick="loginCaptain()">Xác Nhận</button>
+        <button onclick="viewAsOBS()" style="background: transparent; border: 1px solid #555; margin-top: 15px;">Chế Độ Khán Giả / OBS (Không Login)</button>
+    </div>
+</div>
+
+<!-- KHUNG OBS CHÍNH -->
+<div class="obs-container">
+    <div class="teams-wrapper">
+        <!-- ĐỘI 1 -->
+        <div class="team-side" id="t1Box">
+            <div class="team-name" id="t1Name">TEAM 1</div>
+            <div class="status-badge" id="t1Status">CHỜ XÁC NHẬN</div>
+            <button class="btn-ready" id="btnReady1" onclick="setReady(1)">SẴN SÀNG</button>
+        </div>
+
+        <!-- TRUNG TÂM -->
+        <div class="center-stage">
+            <div class="vs-text">VS</div>
+            <button class="btn-roll" id="btnRoll" onclick="startRollMap()">ROLL MAP</button>
+        </div>
+
+        <!-- ĐỘI 2 -->
+        <div class="team-side" id="t2Box">
+            <div class="team-name" id="t2Name">TEAM 2</div>
+            <div class="status-badge" id="t2Status">CHỜ XÁC NHẬN</div>
+            <button class="btn-ready" id="btnReady2" onclick="setReady(2)">SẴN SÀNG</button>
+        </div>
+    </div>
+
+    <!-- KẾT QUẢ MAP -->
+    <div class="map-result-container">
+        <div class="rolling-text" id="rollingAnim">ĐANG TÌM KIẾM CHIẾN TRƯỜNG...</div>
+        <div class="final-map" id="finalMapDisplay">BIND</div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://qxrovptliyozkiktcvst.supabase.co'; 
+    const SUPABASE_ANON_KEY = 'sb_publishable_0YYA8-eml_uTO6McECoBiQ_xW_mE8My'; 
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentCaptainTeam = null; 
+    let draftState = null;
+
+    // 1. CHỨC NĂNG ĐĂNG NHẬP
+    async function loginCaptain() {
+        const u = document.getElementById('capUser').value;
+        const p = document.getElementById('capPass').value;
+        const { data } = await supabaseClient.from('captain_accounts').select('*').eq('username', u).eq('password', p).single();
+        
+        if(data) {
+            currentCaptainTeam = data.team_name;
+            document.getElementById('loginOverlay').style.display = 'none';
+            alert('Đăng nhập thành công với tư cách Đội trưởng: ' + currentCaptainTeam);
+            checkCaptainButtons();
+        } else {
+            alert('Sai tài khoản hoặc mật khẩu!');
+        }
+    }
+
+    function viewAsOBS() {
+        document.getElementById('loginOverlay').style.display = 'none';
+        currentCaptainTeam = 'OBS'; // Chế độ chỉ xem
+    }
+
+    // 2. LẤY DỮ LIỆU ĐỒNG BỘ LIÊN TỤC (POLLING CHO OBS)
+    setInterval(fetchDraftState, 1500); // Tự động quét 1.5 giây / lần
+
+    async function fetchDraftState() {
+        const { data } = await supabaseClient.from('map_draft').select('*').eq('id', 1).single();
+        if(!data) return;
+        draftState = data;
+
+        // Cập nhật Tên đội
+        document.getElementById('t1Name').innerText = draftState.team1_name || 'TEAM 1';
+        document.getElementById('t2Name').innerText = draftState.team2_name || 'TEAM 2';
+
+        // Cập nhật trạng thái Ready
+        updateTeamUI(1, draftState.team1_ready);
+        updateTeamUI(2, draftState.team2_ready);
+
+        // Hiển thị nút Sẵn sàng nếu đúng đội trưởng
+        checkCaptainButtons();
+
+        // Kiểm tra logic nút Roll
+        const btnRoll = document.getElementById('btnRoll');
+        if(draftState.team1_ready && draftState.team2_ready && draftState.status === 'waiting' && currentCaptainTeam !== 'OBS') {
+            btnRoll.classList.add('active'); // Đủ 2 bên SS, 1 trong 2 đội trưởng có thể bấm Roll
+        } else {
+            btnRoll.classList.remove('active');
+        }
+
+        // Kiểm tra hiệu ứng Roll Map cho OBS
+        const rollAnim = document.getElementById('rollingAnim');
+        const finalDisplay = document.getElementById('finalMapDisplay');
+
+        if(draftState.status === 'rolling') {
+            rollAnim.style.display = 'block';
+            finalDisplay.style.display = 'none';
+        } else if (draftState.status === 'finished' && draftState.selected_map) {
+            rollAnim.style.display = 'none';
+            finalDisplay.innerText = draftState.selected_map;
+            finalDisplay.style.display = 'block';
+            document.getElementById('btnRoll').style.display = 'none'; // Ẩn nút Roll sau khi xong
+        } else {
+            rollAnim.style.display = 'none';
+            finalDisplay.style.display = 'none';
+            document.getElementById('btnRoll').style.display = 'block';
+        }
+    }
+
+    function updateTeamUI(teamNum, isReady) {
+        const box = document.getElementById(`t${teamNum}Box`);
+        const status = document.getElementById(`t${teamNum}Status`);
+        if(isReady) {
+            box.classList.add('ready');
+            status.classList.add('ready');
+            status.innerText = 'ĐÃ SẴN SÀNG';
+        } else {
+            box.classList.remove('ready');
+            status.classList.remove('ready');
+            status.innerText = 'CHỜ XÁC NHẬN';
+        }
+    }
+
+    function checkCaptainButtons() {
+        if(!draftState || !currentCaptainTeam || currentCaptainTeam === 'OBS') return;
+        
+        const btn1 = document.getElementById('btnReady1');
+        const btn2 = document.getElementById('btnReady2');
+        btn1.style.display = 'none'; btn2.style.display = 'none';
+
+        if(currentCaptainTeam === draftState.team1_name && !draftState.team1_ready) btn1.style.display = 'inline-block';
+        if(currentCaptainTeam === draftState.team2_name && !draftState.team2_ready) btn2.style.display = 'inline-block';
+    }
+
+    // 3. ĐỘI TRƯỞNG BẤM SẴN SÀNG
+    async function setReady(teamNum) {
+        const updateField = teamNum === 1 ? { team1_ready: true } : { team2_ready: true };
+        await supabaseClient.from('map_draft').update(updateField).eq('id', 1);
+        // Sau khi update, hàm Interval sẽ tự kéo giao diện
+    }
+
+    // 4. THỰC HIỆN RANDOM MAP
+    async function startRollMap() {
+        if(!draftState || draftState.status !== 'waiting') return;
+        
+        // 1. Chuyển trạng thái sang Rolling để tất cả OBS thấy chữ Đang tìm kiếm...
+        await supabaseClient.from('map_draft').update({ status: 'rolling' }).eq('id', 1);
+
+        // 2. Random logic
+        const poolString = draftState.maps_pool || "Bind, Haven, Split, Ascent, Icebox, Breeze, Fracture, Pearl, Lotus, Sunset, Abyss";
+        const mapList = poolString.split(',').map(m => m.trim());
+        const randomMap = mapList[Math.floor(Math.random() * mapList.length)];
+
+        // 3. Fake delay 3 giây tạo kịch tính cho Stream, sau đó lưu kết quả
+        setTimeout(async () => {
+            await supabaseClient.from('map_draft').update({ 
+                status: 'finished', 
+                selected_map: randomMap 
+            }).eq('id', 1);
+        }, 3000);
+    }
+</script>
+
+</body>
+</html>
