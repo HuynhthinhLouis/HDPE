@@ -76,9 +76,9 @@
             overflow: hidden;
         }
         /* Style màu cho từng card */
-        .map-card:nth-child(1) { border-top: 5px solid #008CBA; } /* Map của đội 1 chọn/roll */
-        .map-card:nth-child(2) { border-top: 5px solid var(--val-red); } /* Map của đội 2 chọn/roll */
-        .map-card:nth-child(3) { border-top: 5px solid #ffd700; } /* Map quyết định */
+        .map-card:nth-child(1) { border-top: 5px solid #008CBA; }
+        .map-card:nth-child(2) { border-top: 5px solid var(--val-red); }
+        .map-card:nth-child(3) { border-top: 5px solid #ffd700; }
 
         .map-label {
             font-size: 14px; font-weight: bold; color: #aaa; text-transform: uppercase; margin-bottom: 5px;
@@ -154,19 +154,18 @@
     async function loginCaptain() {
         const u = document.getElementById('capUser').value;
         const p = document.getElementById('capPass').value;
-        // Đã sử dụng maybeSingle() để chặn lỗi 406 khi sai tài khoản
         const { data, error } = await supabaseClient.from('captain_accounts').select('*').eq('username', u).eq('password', p).maybeSingle();
         
         if (error) {
-            console.error("Lỗi truy vấn:", error);
-            alert("Lỗi kết nối cơ sở dữ liệu. Vui lòng thử lại!");
+            console.error("Lỗi đăng nhập:", error);
+            alert("Lỗi kết nối cơ sở dữ liệu!");
             return;
         }
 
         if(data) {
             currentCaptainTeam = data.team_name;
             document.getElementById('loginOverlay').style.display = 'none';
-            alert('Đăng nhập thành công với tư cách Đội trưởng: ' + currentCaptainTeam);
+            alert('Đăng nhập thành công! Team: ' + currentCaptainTeam);
             checkCaptainButtons();
         } else {
             alert('Sai tài khoản hoặc mật khẩu!');
@@ -181,16 +180,9 @@
     setInterval(fetchDraftState, 1500); 
 
     async function fetchDraftState() {
-        // Đã sử dụng maybeSingle() để chặn lỗi 406 liên tục
         const { data, error } = await supabaseClient.from('map_draft').select('*').eq('id', 1).maybeSingle();
         
-        if (error) {
-            console.error("Lỗi kéo dữ liệu:", error);
-            return;
-        }
-        
-        if(!data) return;
-        
+        if (error || !data) return;
         draftState = data;
 
         document.getElementById('t1Name').innerText = draftState.team1_name || 'TEAM 1';
@@ -216,7 +208,6 @@
         } else if (draftState.status === 'finished' && draftState.selected_map) {
             rollAnim.style.display = 'none';
             
-            // Xử lý chuỗi kết quả để tách 3 map
             const maps = draftState.selected_map.split(' | ');
             if (maps.length >= 3) {
                 document.getElementById('map1Result').innerText = maps[0];
@@ -224,7 +215,7 @@
                 document.getElementById('map3Result').innerText = maps[2];
             }
             
-            finalDisplay.style.display = 'flex'; // Hiện khối 3 maps
+            finalDisplay.style.display = 'flex';
             document.getElementById('btnRoll').style.display = 'none'; 
         } else {
             rollAnim.style.display = 'none';
@@ -248,57 +239,50 @@
     }
 
     function checkCaptainButtons() {
-        // Nếu chưa có dữ liệu hoặc là OBS thì không làm gì cả
         if(!draftState || !currentCaptainTeam || currentCaptainTeam === 'OBS') return;
         
         const btn1 = document.getElementById('btnReady1');
         const btn2 = document.getElementById('btnReady2');
         
-        // Mặc định ẩn nút
+        // Mặc định ẩn 2 nút
         btn1.style.display = 'none'; 
         btn2.style.display = 'none';
 
-        // TỰ ĐỘNG CHUẨN HÓA: Ép về chữ thường và xóa khoảng trắng dư thừa ở 2 đầu
-        const capTeam = String(currentCaptainTeam).trim().toLowerCase();
-        const t1 = String(draftState.team1_name || '').trim().toLowerCase();
-        const t2 = String(draftState.team2_name || '').trim().toLowerCase();
+        // Ép kiểu về dạng chuỗi thường và xóa khoảng trắng dư thừa 2 đầu để chống lỗi gõ sai
+        const capTeam = String(currentCaptainTeam || '').trim().toLowerCase();
+        const team1 = String(draftState.team1_name || '').trim().toLowerCase();
+        const team2 = String(draftState.team2_name || '').trim().toLowerCase();
 
-        // IN RA CONSOLE ĐỂ BẠN KIỂM TRA LỖI DO ĐÁNH MÁY (Bấm F12 để xem)
-        console.log(`[KIỂM TRA] Đội của bạn: '${capTeam}' | Hệ thống đang set Đội 1: '${t1}' | Đội 2: '${t2}'`);
-
-        // Kiểm tra và hiển thị nút
-        if(capTeam === t1 && !draftState.team1_ready) btn1.style.display = 'inline-block';
-        if(capTeam === t2 && !draftState.team2_ready) btn2.style.display = 'inline-block';
+        // Kiểm tra và hiển thị nút cho chính xác đội của người đó
+        if(capTeam === team1 && !draftState.team1_ready) btn1.style.display = 'inline-block';
+        if(capTeam === team2 && !draftState.team2_ready) btn2.style.display = 'inline-block';
     }
 
     async function setReady(teamNum) {
+        // Ẩn nút ngay lập tức sau khi bấm để tránh click nhiều lần
+        document.getElementById(`btnReady${teamNum}`).style.display = 'none';
+        
         const updateField = teamNum === 1 ? { team1_ready: true } : { team2_ready: true };
         await supabaseClient.from('map_draft').update(updateField).eq('id', 1);
     }
 
-    // THỰC HIỆN RANDOM MAP CHO BO3
     async function startRollMap() {
         if(!draftState || draftState.status !== 'waiting') return;
         
         await supabaseClient.from('map_draft').update({ status: 'rolling' }).eq('id', 1);
 
         const poolString = draftState.maps_pool || "Bind, Haven, Split, Ascent, Icebox, Breeze, Fracture, Pearl, Lotus, Sunset, Abyss";
-        // Tách chuỗi, loại bỏ khoảng trắng dư thừa và phần tử trống
         const mapList = poolString.split(',').map(m => m.trim()).filter(m => m !== '');
 
-        // Thuật toán xáo trộn mảng (Fisher-Yates) để lấy 3 map hoàn toàn không trùng lặp
+        // Thuật toán xáo trộn mảng để lấy 3 map không trùng
         for (let i = mapList.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [mapList[i], mapList[j]] = [mapList[j], mapList[i]];
         }
         
-        // Lấy 3 map đầu tiên
         const bo3Maps = [mapList[0], mapList[1], mapList[2]];
-        
-        // Lưu dữ liệu vào DB theo định dạng chuỗi: "Map1 | Map2 | Map3"
         const resultString = bo3Maps.join(' | ');
 
-        // Delay 3s tạo kịch tính
         setTimeout(async () => {
             await supabaseClient.from('map_draft').update({ 
                 status: 'finished', 
